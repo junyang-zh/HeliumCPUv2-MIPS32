@@ -1,2 +1,5 @@
 # MIPSLAB
-Computer orgnization courseworks
+
+Computer orgnization courseworks in XJTU.
+
+By Junyang Zhang.
