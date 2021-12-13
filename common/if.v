@@ -6,8 +6,10 @@ module pc #(
     input wire clk, rst,
     input wire stall,           // stall signal for pipelines
 
+    input wire branch_take,
+    input wire targ_or_offset,
     input wire[W-1:0] targ_pc,
-    input wire branch_take,     // 1 for j
+    input wire[W-1:0] offset,
 
     output reg[W-1:0] pc
 );
@@ -16,7 +18,7 @@ module pc #(
             pc <= `ZERO_WORD;
         end
         else begin
-            pc <= branch_take ? targ_pc : pc + 4;
+            pc <= branch_take ? (targ_or_offset ? targ_pc : pc + offset) : pc + 4;
         end
     end
 endmodule

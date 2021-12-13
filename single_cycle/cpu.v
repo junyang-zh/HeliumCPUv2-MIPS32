@@ -27,4 +27,22 @@ module cpu #(
         .branch_take(branch_take),
         .pc(pc)
     );
+
+    wire[1:0] inst_type;
+    wire[`OP_WIDTH-1:0] op_code;
+    wire[`J_ADDR_WIDTH-1:0] j_addr;
+    wire[`REG_ADDR_W-1:0] rs, rt, rd;
+    wire[W-1:0] imm;
+    wire[`WORD_INDEX_W-1:0] shamt;
+
+    decoder decoder_inst(
+        .clk(clk), .rst(rst),
+        .inst(inst),
+        .inst_type(inst_type),
+        .op_code(op_code),
+        .j_addr(j_addr),
+        .rs(rs), .rt(rt),
+        .imm(imm),
+        .shamt(shamt)
+    );
 endmodule
