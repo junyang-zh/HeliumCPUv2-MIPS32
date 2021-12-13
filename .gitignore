@@ -1,1 +1,7 @@
+# MacOS
+.DS_STORE
+*/.DS_STORE
+# vvp and waveforms for each target
 target
+# MIPS assembler
+sim/Mars4_5.jar

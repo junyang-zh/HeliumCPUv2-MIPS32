@@ -7,6 +7,7 @@ module top #(
 );
     wire[W-1:0] pc, inst, l_addr, l_data, s_addr, s_data;
     wire load_en, store_en;
+
     cpu cpu_inst(
         .clk(clk), .rst(rst),
         .pc(pc),
@@ -17,5 +18,21 @@ module top #(
         .store_en(store_en),
         .s_addr(s_addr),
         .s_data(s_data)
+    );
+
+    dbg_imem imem(
+        .clk(clk), .rst(rst),
+        .addr(pc),
+        .data(inst)
+    );
+
+    dbg_dmem dmem(
+        .clk(clk), .rst(rst),
+        .read_en(load_en),
+        .read_addr(l_addr),
+        .read_data(l_data),
+        .write_en(store_en),
+        .write_addr(s_addr),
+        .write_data(s_data)
     );
 endmodule

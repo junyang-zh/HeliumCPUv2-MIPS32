@@ -17,5 +17,14 @@ module cpu #(
     output wire[W-1:0] s_addr,
 	output wire[W-1:0] s_data
 );
-    assign s_data = l_data;
+    wire[W-1:0] targ_pc;
+    wire branch_take;
+
+    pc pc_inst(
+        .clk(clk), .rst(rst),
+        .stall(1'b0),
+        .targ_pc(targ_pc),
+        .branch_take(branch_take),
+        .pc(pc)
+    );
 endmodule
