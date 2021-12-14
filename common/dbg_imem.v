@@ -1,4 +1,4 @@
-// dbg_dmem.v: instruction memory instance for simulation
+// dbg_imem.v: instruction memory instance for simulation
 
 `include "defines.v"
 

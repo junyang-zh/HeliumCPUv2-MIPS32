@@ -91,6 +91,10 @@ module cpu #(
     // EXPRIMENTAL:
     // wire reg_write_en = `FALSE; NOT TILL WB !!
     // wire[`REG_ADDR_W-1:0] reg_write_dst = rd_addr; NONONONO WB!
+    wire write_en;
+    wire[`REG_ADDR_W-1:0] reg_write_addr;
+    wire[W-1:0] reg_write_data;
+
     regfile regfile_inst(
         .clk(clk), .rst(rst),
         .rs_en(rs_read_en),
@@ -99,9 +103,9 @@ module cpu #(
         .rt_en(rt_read_en),
         .rt_addr(rt_addr),
         .rt_data(rt_val),
-        .write_en(reg_write_en), // nonono
-        .rd_addr(reg_write_dst), // nonono
-        .rd_data(rd_val)
+        .write_en(write_en),
+        .rd_addr(reg_write_addr),
+        .rd_data(reg_write_data)
     );
 
     alu_with_src_mux alu_inst(
@@ -128,4 +132,19 @@ module cpu #(
         .s_addr(s_addr),
         .s_data(s_data)
     );
+
+    // WB stage
+
+    writeback wb_inst(
+        .reg_write_en(reg_write_en),
+        .alu_result(alu_result), .mem_data(l_data), .pc(pc),
+        .rd(rd_addr), .rt(rt_addr),
+        .reg_write_src(reg_write_src),
+        .reg_write_dst(reg_write_dst),
+
+        .write_en(write_en),
+        .reg_write_addr(reg_write_addr),
+        .reg_write_data(reg_write_data)
+    );
+    
 endmodule
