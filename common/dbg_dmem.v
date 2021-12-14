@@ -4,7 +4,7 @@
 
 module dbg_dmem #(
     parameter W = `WORD_WIDTH,
-    parameter DMEM_SIZE = 65536
+    parameter DMEM_SIZE = 4096
 ) (
     input wire clk, rst,
 
@@ -33,7 +33,7 @@ module dbg_dmem #(
     end
     
     // Return words that are aligned
-    always @(posedge clk) begin
+    always @(*) begin
         if (rst) begin
             read_data <= `ZERO_WORD;
         end

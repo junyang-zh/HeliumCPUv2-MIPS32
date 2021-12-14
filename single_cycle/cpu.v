@@ -123,7 +123,7 @@ module cpu #(
         .mem_read_en(mem_read_en), .mem_write_en(mem_write_en),
         .mem_addr(alu_result),
         .mem_write_data(rt_val), .mem_read_data(mem_read_data),
-        // not exactly rt_val, BUGGY!
+        // not exactly rt_val for h and b, BUGGY!
 
         .load_en(load_en),
         .l_addr(l_addr),
@@ -137,7 +137,7 @@ module cpu #(
 
     writeback wb_inst(
         .reg_write_en(reg_write_en),
-        .alu_result(alu_result), .mem_data(l_data), .pc(pc),
+        .alu_result(alu_result), .mem_data(mem_read_data), .pc(pc),
         .rd(rd_addr), .rt(rt_addr),
         .reg_write_src(reg_write_src),
         .reg_write_dst(reg_write_dst),

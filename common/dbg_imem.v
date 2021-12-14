@@ -4,7 +4,7 @@
 
 module dbg_imem #(
     parameter W = `WORD_WIDTH,
-    parameter IMEM_SIZE = 1024
+    parameter IMEM_SIZE = 128
 ) (
     input wire clk, rst,
     input wire[W-1:0] addr,

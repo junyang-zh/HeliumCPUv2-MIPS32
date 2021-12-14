@@ -52,7 +52,7 @@ module decoder #(
             end
             `I_TYPE: begin
                 rs <= inst[25:21];
-                rt = inst[20:16];
+                rt <= inst[20:16];
                 // Decide the extend method of imm
                 case (op_code)
                     `LB, `LBU, `LH, `LHU, `LW, `SB, `SH, `SW,   // s_ext(data_offset)

@@ -28,7 +28,7 @@ module writeback #(
                     reg_write_data = pc + 4;
                 default: reg_write_data = `ZERO_WORD;
             endcase
-            case (reg_write_addr)
+            case (reg_write_dst)
                 `REG_W_DST_RD:
                     reg_write_addr = rd;
                 `REG_W_DST_RT:

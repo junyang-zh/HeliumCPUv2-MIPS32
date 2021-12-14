@@ -21,6 +21,18 @@ module regfile #(
 );
     // The regfile, r0 will always be zero thus not used
     reg[W-1:0] regs[RW-1:1];
+
+    generate
+        integer i;
+        always @(*) begin
+            if (rst) begin
+                for (i = 0; i < W; i = i + 1) begin: rst_regfile
+                    regs[i] <= `ZERO_WORD;
+                end
+            end
+        end
+    endgenerate
+
     // Write rd
     always @(posedge clk) begin
         if (!rst && write_en && rd_addr != `REG_ZERO) begin
