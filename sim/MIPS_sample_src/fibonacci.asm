@@ -21,7 +21,3 @@ loop: lw   $s3, 0($s0)      # Get value from array F[n-2]
       addi $s0, $s0, 4      # increment address to now-known Fib. number storage
       addi $s1, $s1, -1     # decrement loop counter
       bgtz $s1, loop        # repeat while not finished
-      
-      # Fibonacci numbers are computed and stored in array. Print them.
-      la   $a0, fibs        # first argument for print (array)
-      add  $a1, $zero, $s5  # second argument for print (size)

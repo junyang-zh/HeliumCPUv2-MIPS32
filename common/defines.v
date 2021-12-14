@@ -1,8 +1,12 @@
-// Debug and simulations
+// # Debug and simulations
 `define IMEM_SIM_FILE   "../../sim/imem.text"
 `define DMEM_SIM_FILE   "../../sim/dmem.data"
 
-// MIPS-C ISA
+// # High is 1
+`define TRUE    1'b1
+`define FALSE   1'b0
+
+// # MIPS-C ISA
 `define BYTE_WIDTH      8
 
 `define WORD_WIDTH      32
@@ -22,10 +26,18 @@
 `define I_TYPE  2'b10
 `define J_TYPE  2'b11
 
-// ALU ops
+// # ALU ops
+// ## ALU SRC def
+`define ALU_SRC_WIDTH   4
+`define ALU_OP_SRC_ZERO `ALU_SRC_WIDTH'd0
+`define ALU_OP_SRC_IMM  `ALU_SRC_WIDTH'd1
+`define ALU_OP_SRC_RS   `ALU_SRC_WIDTH'd2
+`define ALU_OP_SRC_RT   `ALU_SRC_WIDTH'd3
+`define ALU_OP_SRC_PC   `ALU_SRC_WIDTH'd4 // For jalr
+// ## ALU defines
 `define ALUOP_WIDTH     5
 `define ALUOP_ERR       `ALUOP_WIDTH'd0
-// Normal
+// ## Normal OP
 `define ALU_ADD         `ALUOP_WIDTH'd1
 `define ALU_SUB         `ALUOP_WIDTH'd2
 `define ALU_MULT        `ALUOP_WIDTH'd3
@@ -37,8 +49,8 @@
 `define ALU_OR          `ALUOP_WIDTH'd9
 `define ALU_XOR         `ALUOP_WIDTH'd10
 `define ALU_NOR         `ALUOP_WIDTH'd11
-// Compare: Equal, NotEqual, Greater, Lower,
-// GreaterEqual, LowerEqual, and Unsigned versions
+// ## Compare: Equal, NotEqual, Greater, Lower,
+//    GreaterEqual, LowerEqual, and Unsigned versions
 `define ALU_EQ          `ALUOP_WIDTH'd12
 `define ALU_NEQ         `ALUOP_WIDTH'd13
 `define ALU_G           `ALUOP_WIDTH'd14
@@ -50,10 +62,28 @@
 `define ALU_GE_U        `ALUOP_WIDTH'd20
 `define ALU_LE_U        `ALUOP_WIDTH'd21
 
-// OP codes
+// # Reg MUX types
+// Reg write src
+`define REG_W_SRC_WIDTH 2
+`define REG_W_SRC_ALU   `REG_W_SRC_WIDTH'd0
+`define REG_W_SRC_MEM   `REG_W_SRC_WIDTH'd1
+`define REG_W_SRC_PCA4  `REG_W_SRC_WIDTH'd2 // for jalr, jal
+// Reg write dst
+`define REG_W_DST_WIDTH 2
+`define REG_W_DST_RD    `REG_W_DST_WIDTH'd0
+`define REG_W_DST_RT    `REG_W_DST_WIDTH'd1
+`define REG_W_DST_R31   `REG_W_DST_WIDTH'd2 // for jal
+
+// # OP codes
 `define OP_ERR  6'b111111
-// I-type
+// ## I-type
+`define LB      6'b100000
+`define LBU     6'b100100
+`define LH      6'b100001
+`define LHU     6'b100101
 `define LW      6'b100011
+`define SB      6'b101000
+`define SH      6'b101001
 `define SW      6'b101011
 
 `define ADDI    6'b001000
@@ -62,7 +92,7 @@
 `define LUI     6'b001111
 `define ORI     6'b001101
 `define SLTI    6'b001010
-`define SLTU    6'b001011
+`define SLTIU    6'b001011
 `define XORI    6'b001110
 
 `define BEQ     6'b000100
@@ -70,14 +100,18 @@
 
 `define BLEZ    6'b000110
 `define BGTZ    6'b000111
-// OP code conflict, must decide with rt field
+// ### OP code conflict, must decide with rt field
 `define BGEZ_BLTZ   6'b000001
 `define BGEZRT  5'b00001
 `define BLTZRT  5'b00000
 
-// R-type
+// ## R-type
 `define R_R     6'b000000
-// R-R type funct
+// ### R type funct
+// ### R-type jump instructions
+`define JALR    6'b001001
+`define JR      6'b001000
+// ### R-R type
 `define ADD     6'b100000
 `define ADDU    6'b100001
 `define AND     6'b100100
@@ -99,6 +133,6 @@
 `define SUBU    6'b100011
 `define XOR     6'b100110
 
-// J-type
+// ## J-type
 `define J       6'b000010
 `define JAL     6'b000011

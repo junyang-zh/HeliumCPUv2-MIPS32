@@ -1,20 +1,20 @@
+// decoder.v: instruction fetch stage
+
 `include "defines.v"
 
 module decoder #(
     parameter W = `WORD_WIDTH
 ) (
-    input wire clk, rst,
+    // input wire clk, rst, now not used
     input wire[W-1:0] inst,
 
     output reg[1:0] inst_type,
     // R, I, J
     output reg[`OP_WIDTH-1:0] op_code,
     output reg[`FUNCT_WIDTH-1:0] funct,
-    // J
-    output reg[`J_ADDR_WIDTH-1:0] j_addr,
     // R, I
     output reg[`REG_ADDR_W-1:0] rs, rt,
-    // I
+    // I, J (imm is j_addr)
     output reg[W-1:0] imm,
     // R
     output reg[`REG_ADDR_W-1:0] rd,
@@ -42,22 +42,32 @@ module decoder #(
                 rd <= inst[15:11];
                 shamt <= inst[10:6];
                 funct <= inst[5:0];
+                // Decide imm for shift inst
+                case (op_code)
+                    `SLL, `SRA:
+                        // Zero extend s
+                        imm = { {27{1'b0}}, inst[10:6] };
+                    default: imm = `ZERO_WORD;
+                endcase
             end
             `I_TYPE: begin
                 rs <= inst[25:21];
                 rt = inst[20:16];
                 // Decide the extend method of imm
                 case (op_code)
-                    `LW, `SW, `ADDI, `ANDI, `LUI, `ORI, `SLTI, `XORI,
-                    `BEQ, `BNE, `BLEZ, `BGTZ, `BGEZ_BLTZ:
+                    `LB, `LBU, `LH, `LHU, `LW, `SB, `SH, `SW,   // s_ext(data_offset)
+                    `ADDI, `ANDI, `ORI, `SLTI, `XORI,           // s_ext(immediate)
+                    `BEQ, `BNE, `BLEZ, `BGTZ, `BGEZ_BLTZ:       // s_ext(inst_offset)
                         imm = { {16{inst[15]}}, inst[15:0] };
-                    `ADDIU, `SLTU:
+                    `LUI: // Do the shift and fill here
+                        imm = { inst[15:0], {16{1'b0}} };
+                    `ADDIU, `SLTIU:
                         imm = { {16{1'b0}}, inst[15:0] };
                     default: imm = `ZERO_WORD;
                 endcase
             end
-            `J_TYPE: begin
-                j_addr <= inst[25:0];
+            `J_TYPE: begin // jump to imm
+                imm <= { 4'b0 , inst[25:0], 2'b0 };
             end
             default: op_code = `OP_ERR;
         endcase

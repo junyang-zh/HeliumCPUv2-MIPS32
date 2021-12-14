@@ -1,3 +1,5 @@
+// dbg_dmem.v: data memory instance for simulation
+
 `include "defines.v"
 
 module dbg_dmem #(
@@ -34,6 +36,9 @@ module dbg_dmem #(
     always @(posedge clk) begin
         if (rst) begin
             read_data <= `ZERO_WORD;
+        end
+        else if (write_en && read_en && write_addr == read_addr) begin // Forward
+            read_data <= write_data;
         end
         else if (read_en) begin
             read_data <= mem[read_addr[18:2]];

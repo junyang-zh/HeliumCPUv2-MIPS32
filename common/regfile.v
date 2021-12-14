@@ -1,3 +1,5 @@
+// regfile.v: execution stage
+
 `include "defines.v"
 
 module regfile #(

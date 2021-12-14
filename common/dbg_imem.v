@@ -1,3 +1,5 @@
+// dbg_dmem.v: instruction memory instance for simulation
+
 `include "defines.v"
 
 module dbg_imem #(
