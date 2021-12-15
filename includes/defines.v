@@ -9,6 +9,26 @@
 `define FALSE   1'b0
 
 // # MIPS-C ISA
+/*   Supported instructions (42)
+    `R_TYPE: (18)
+        `ADD, `ADDU, `SUB, `SUBU,
+        NOT FULLY --`MULT, `MULTU, `DIV, `DIVU,--
+        `AND, `OR, `XOR, `NOR,
+        `SLT, `SLTU, `SLL, `SRA, `SRL,
+        `SLLV, `SRAV, `SRLV:
+        `JALR, `JR:
+    `I_TYPE: (22)
+        `LB, `LBU, `LH, `LHU, `LW:
+        `SB, `SH, `SW:
+        `ADDI, `ADDIU, `ANDI, `ORI, `XORI:
+        `SLTI, `SLTIU:
+        `LUI:
+        `BEQ, `BNE:
+        `BLEZ, `BGTZ, `BGEZ_BLTZ:
+    `J_TYPE: (2)
+        `J, `JAL:
+*/
+
 `define BYTE_WIDTH      8
 `define HALF_WORD_WIDTH 16
 `define WORD_WIDTH      32
@@ -70,6 +90,7 @@
 `define REG_W_SRC_ALU   `REG_W_SRC_WIDTH'd0
 `define REG_W_SRC_MEM   `REG_W_SRC_WIDTH'd1
 `define REG_W_SRC_PCA4  `REG_W_SRC_WIDTH'd2 // for jalr, jal
+`define REG_W_SRC_IMM   `REG_W_SRC_WIDTH'd3 // for lui
 // Reg write dst
 `define REG_W_DST_WIDTH 2
 `define REG_W_DST_RD    `REG_W_DST_WIDTH'd0

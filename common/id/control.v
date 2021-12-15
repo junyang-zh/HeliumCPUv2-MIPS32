@@ -106,8 +106,8 @@ module control (
                         alu_op = `ALU_ADD;
                     `ANDI:
                         alu_op = `ALU_AND;
-                    `LUI: // shiftleft "extended" imm and or 0
-                        alu_op = `ALU_OR;
+                    `LUI: // Write back imm immediately
+                        alu_op = `ALUOP_ERR;
                     `ORI:
                         alu_op = `ALU_OR;
                     `SLTI:
@@ -141,8 +141,8 @@ module control (
                         alu_op1_src = `ALU_OP_SRC_RS;
                         alu_op2_src = `ALU_OP_SRC_IMM;
                     end
-                    `LUI: begin // IMM | 0
-                        alu_op1_src = `ALU_OP_SRC_IMM;
+                    `LUI: begin // Alu helps nothing
+                        alu_op1_src = `ALU_OP_SRC_ZERO;
                         alu_op2_src = `ALU_OP_SRC_ZERO;
                     end
                     `BEQ, `BNE: begin
@@ -264,11 +264,11 @@ module control (
                         reg_write_src = `REG_W_SRC_ALU;
                         reg_write_dst = `REG_W_DST_RT;
                     end
-                    `LUI: begin // [rt] <- imm | 0
+                    `LUI: begin // [rt] <- imm
                         rs_read_en = `FALSE;
                         rt_read_en = `FALSE;
                         reg_write = `TRUE;
-                        reg_write_src = `REG_W_SRC_ALU;
+                        reg_write_src = `REG_W_SRC_IMM;
                         reg_write_dst = `REG_W_DST_RT;
                     end
                     `BEQ, `BNE: begin // cmp [rs] [rt]

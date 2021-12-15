@@ -24,8 +24,10 @@ module cpu #(
     // Stage counter
 
     wire if_clk, id_clk, ex_clk, mem_clk, wb_clk;
+    wire[`OP_WIDTH-1:0] op_code;
     counter counter_inst(
         .clk(clk), .rst(rst),
+        .op_code(op_code),
 
         .if_clk(if_clk),
         .id_clk(id_clk),
@@ -72,6 +74,8 @@ module cpu #(
     decoder decoder_inst(
         .clk(id_clk), .rst(rst),
         .inst(inst),
+
+        .op_code(op_code),
 
         .rs(rs_addr), .rt(rt_addr),
         .imm(imm),
