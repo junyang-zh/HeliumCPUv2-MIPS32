@@ -14,13 +14,14 @@ module control (
     // PC control
     output reg can_branch,      // if the inst can branch
     output reg targ_else_offset,// if the addr is target, else offset
-    output reg pc_addr_src_reg,  // if the addr is from regfile, else imm
+    output reg pc_addr_src_reg, // if the addr is from regfile, else imm
     // REG control
-    output reg rs_read_en, rt_read_en, reg_write_en,
+    output reg rs_read_en, rt_read_en, reg_write,
     output reg[`REG_W_SRC_WIDTH-1:0] reg_write_src,
     output reg[`REG_W_DST_WIDTH-1:0] reg_write_dst,
     // MEM control
-    output reg mem_read_en, mem_write_en // mem addr can only be alu_result (l, s)
+    output reg mem_read_en, mem_write_en, // mem addr can only be alu_result (l, s)
+    output reg[`L_S_MODE_W-1:0] l_s_mode        // word, halfword or byte
 );
     always @(*) begin
 
@@ -196,33 +197,33 @@ module control (
                     `SLLV, `SRAV, `SRLV: begin
                         rs_read_en = `TRUE;
                         rt_read_en = `TRUE;
-                        reg_write_en = `TRUE;
+                        reg_write = `TRUE;
                         reg_write_src = `REG_W_SRC_ALU;
                         reg_write_dst = `REG_W_DST_RD;
                     end
                     `SLL, `SRA, `SRL: begin
                         rs_read_en = `FALSE;
                         rt_read_en = `TRUE;
-                        reg_write_en = `TRUE;
+                        reg_write = `TRUE;
                         reg_write_src = `REG_W_SRC_ALU;
                         reg_write_dst = `REG_W_DST_RD;
                     end
                     `JALR: begin // ALU: pc+4 -> [rd], pc <- [rs]
                         rs_read_en = `TRUE;
                         rt_read_en = `FALSE;
-                        reg_write_en = `TRUE;
+                        reg_write = `TRUE;
                         reg_write_src = `REG_W_SRC_PCA4;
                         reg_write_dst = `REG_W_DST_RD;
                     end
                     `JR: begin // pc <- [rs]
                         rs_read_en = `TRUE;
                         rt_read_en = `FALSE;
-                        reg_write_en = `FALSE;
+                        reg_write = `FALSE;
                     end
                     default: begin
                         rs_read_en = `FALSE;
                         rt_read_en = `FALSE;
-                        reg_write_en = `FALSE;
+                        reg_write = `FALSE;
                     end
                 endcase
             end
@@ -231,14 +232,14 @@ module control (
                     `LB, `LBU, `LH, `LHU, `LW: begin // [rt] <- M[[rs]+imm]
                         rs_read_en = `TRUE;
                         rt_read_en = `FALSE;
-                        reg_write_en = `TRUE;
+                        reg_write = `TRUE;
                         reg_write_src = `REG_W_SRC_MEM;
                         reg_write_dst = `REG_W_DST_RT;
                     end
                     `SB, `SH, `SW: begin // [rt] <- M[[rs]+imm]
                         rs_read_en = `TRUE;
                         rt_read_en = `FALSE;
-                        reg_write_en = `TRUE;
+                        reg_write = `TRUE;
                         reg_write_src = `REG_W_SRC_MEM;
                         reg_write_dst = `REG_W_DST_RT;
                     end
@@ -246,31 +247,31 @@ module control (
                     `SLTI, `SLTIU, `XORI: begin // [rt] < func([rs], imm)
                         rs_read_en = `TRUE;
                         rt_read_en = `FALSE;
-                        reg_write_en = `TRUE;
+                        reg_write = `TRUE;
                         reg_write_src = `REG_W_SRC_ALU;
                         reg_write_dst = `REG_W_DST_RT;
                     end
                     `LUI: begin // [rt] <- imm | 0
                         rs_read_en = `FALSE;
                         rt_read_en = `FALSE;
-                        reg_write_en = `TRUE;
+                        reg_write = `TRUE;
                         reg_write_src = `REG_W_SRC_ALU;
                         reg_write_dst = `REG_W_DST_RT;
                     end
                     `BEQ, `BNE: begin // cmp [rs] [rt]
                         rs_read_en = `TRUE;
                         rt_read_en = `TRUE;
-                        reg_write_en = `FALSE;
+                        reg_write = `FALSE;
                     end
                     `BLEZ, `BGTZ, `BGEZ_BLTZ: begin // cmp [rs] 0
                         rs_read_en = `TRUE;
                         rt_read_en = `FALSE;
-                        reg_write_en = `FALSE;
+                        reg_write = `FALSE;
                     end
                     default: begin
                         rs_read_en = `FALSE;
                         rt_read_en = `FALSE;
-                        reg_write_en = `FALSE;
+                        reg_write = `FALSE;
                     end
                 endcase
             end
@@ -278,7 +279,7 @@ module control (
                 if (op_code == `JAL) begin
                     rs_read_en = `TRUE;
                     rt_read_en = `FALSE;
-                    reg_write_en = `TRUE;
+                    reg_write = `TRUE;
                     reg_write_src = `REG_W_SRC_PCA4;
                     reg_write_dst = `REG_W_DST_R31;
                 end
@@ -286,11 +287,12 @@ module control (
             default: begin
                 rs_read_en = `FALSE;
                 rt_read_en = `FALSE;
-                reg_write_en = `FALSE;
+                reg_write = `FALSE;
             end
         endcase
 
         // MEM CTRL --------------------------------------------------//
+        // Enables
         case (op_code)
             `LB, `LBU, `LH, `LHU, `LW: begin
                 mem_read_en = `TRUE;
@@ -304,6 +306,15 @@ module control (
                 mem_read_en = `FALSE;
                 mem_write_en = `FALSE;
             end
+        endcase
+        // Modes
+        case (op_code)
+            `LB, `SB:   l_s_mode = `L_S_BYTE;
+            `LBU:       l_s_mode = `L_S_BYTE_U;
+            `LH, `SH:   l_s_mode = `L_S_HALF;
+            `LHU:       l_s_mode = `L_S_HALF_U;
+            `LW, `SW:   l_s_mode = `L_S_WORD;
+            default:    l_s_mode = `L_S_WORD;
         endcase
     end
 endmodule

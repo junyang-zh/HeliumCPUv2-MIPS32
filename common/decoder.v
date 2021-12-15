@@ -56,9 +56,10 @@ module decoder #(
                 // Decide the extend method of imm
                 case (op_code)
                     `LB, `LBU, `LH, `LHU, `LW, `SB, `SH, `SW,   // s_ext(data_offset)
-                    `ADDI, `ANDI, `ORI, `SLTI, `XORI,           // s_ext(immediate)
-                    `BEQ, `BNE, `BLEZ, `BGTZ, `BGEZ_BLTZ:       // s_ext(inst_offset)
+                    `ADDI, `ANDI, `ORI, `SLTI, `XORI:           // s_ext(immediate)
                         imm = { {16{inst[15]}}, inst[15:0] };
+                    `BEQ, `BNE, `BLEZ, `BGTZ, `BGEZ_BLTZ:       // s_ext(inst_offset<<2)
+                        imm = { {14{inst[15]}}, inst[15:0], 2'b0 };
                     `LUI: // Do the shift and fill here
                         imm = { inst[15:0], {16{1'b0}} };
                     `ADDIU, `SLTIU:

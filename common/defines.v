@@ -8,7 +8,7 @@
 
 // # MIPS-C ISA
 `define BYTE_WIDTH      8
-
+`define HALF_WORD_WIDTH 16
 `define WORD_WIDTH      32
 `define WORD_INDEX_W    5
 `define REG_ADDR_W      5
@@ -73,6 +73,14 @@
 `define REG_W_DST_RD    `REG_W_DST_WIDTH'd0
 `define REG_W_DST_RT    `REG_W_DST_WIDTH'd1
 `define REG_W_DST_R31   `REG_W_DST_WIDTH'd2 // for jal
+
+// # Mem MUX types
+`define L_S_MODE_W      3
+`define L_S_WORD        `L_S_MODE_W'd0
+`define L_S_HALF        `L_S_MODE_W'd1
+`define L_S_HALF_U      `L_S_MODE_W'd2
+`define L_S_BYTE        `L_S_MODE_W'd3
+`define L_S_BYTE_U      `L_S_MODE_W'd4
 
 // # OP codes
 `define OP_ERR  6'b111111

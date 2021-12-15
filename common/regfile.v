@@ -20,18 +20,9 @@ module regfile #(
     input wire[W-1:0] rd_data
 );
     // The regfile, r0 will always be zero thus not used
-    reg[W-1:0] regs[RW-1:1];
+    reg[W-1:0] regs[W-1:0];
 
-    generate
-        integer i;
-        always @(*) begin
-            if (rst) begin
-                for (i = 0; i < W; i = i + 1) begin: rst_regfile
-                    regs[i] <= `ZERO_WORD;
-                end
-            end
-        end
-    endgenerate
+    wire[W-1:0] dbg21 = regs[`REG_ADDR_W'd21];
 
     // Write rd
     always @(posedge clk) begin
@@ -44,10 +35,6 @@ module regfile #(
         if (rst || rs_addr == `REG_ZERO) begin
             rs_data = `ZERO_WORD;
         end
-        // If read and write happens simultaneously
-        else if (write_en && rs_en && rs_addr == rd_addr) begin
-            rs_data = rd_data;  // forward it
-        end
         else if (rs_en) begin
             rs_data = regs[rs_addr];
         end
@@ -59,9 +46,6 @@ module regfile #(
     always @(*) begin
         if (rst || rt_addr == `REG_ZERO) begin
             rt_data = `ZERO_WORD;
-        end
-        else if (write_en && rt_en && rt_addr == rd_addr) begin
-            rt_data = rd_data;
         end
         else if (rt_en) begin
             rt_data = regs[rt_addr];

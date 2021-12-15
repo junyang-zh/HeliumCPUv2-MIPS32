@@ -9,15 +9,24 @@ module alu #(
     input wire[W-1:0] op2,
     input wire[`ALUOP_WIDTH-1:0] alu_op,
 
-    output reg[W-1:0] result
+    output reg[W-1:0] result,
+    output reg integer_overflow
 );
+    reg[W:0] overflow_temp;
+
     // ALU is a combinational component; in MIPS, DIV/MUL are done by MDU
     always @(*) begin
         case (alu_op)
-            `ALU_ADD:
-                result <= op1 + op2;
-            `ALU_SUB:
-                result <= op1 - op2;
+            `ALU_ADD: begin     // detect overflow
+                overflow_temp = { op1[W-1], op1 } + { op2[W-1], op2 };
+                integer_overflow = (overflow_temp[W] != overflow_temp[W-1]);
+                result = overflow_temp[W-1:0];
+            end
+            `ALU_SUB: begin     // detect overflow
+                overflow_temp = { op1[W-1], op1 } - { op2[W-1], op2 };
+                integer_overflow = (overflow_temp[W] != overflow_temp[W-1]);
+                result = overflow_temp[W-1:0];
+            end
             `ALU_SL:
                 result <= op1 << op2[`WORD_INDEX_W-1:0];
             `ALU_ARITH_SR:

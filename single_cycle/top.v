@@ -5,11 +5,15 @@ module top #(
 ) (
     input wire clk, rst
 );
+    // split clk for mem_wb
+    wire mem_wb_clk = ~clk;
+
     wire[W-1:0] pc, inst, l_addr, l_data, s_addr, s_data;
     wire load_en, store_en;
 
     cpu cpu_inst(
-        .clk(clk), .rst(rst),
+        .main_clk(clk), .wb_clk(mem_wb_clk),
+        .rst(rst),
         .pc(pc),
         .inst(inst),
         .load_en(load_en),
@@ -21,13 +25,13 @@ module top #(
     );
 
     dbg_imem imem(
-        .clk(clk), .rst(rst),
+        .clk(mem_wb_clk), .rst(rst),
         .addr(pc),
         .data(inst)
     );
 
     dbg_dmem dmem(
-        .clk(clk), .rst(rst),
+        .clk(mem_wb_clk), .rst(rst),
         .read_en(load_en),
         .read_addr(l_addr),
         .read_data(l_data),

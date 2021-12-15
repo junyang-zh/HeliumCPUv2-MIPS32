@@ -5,7 +5,9 @@
 module writeback #(
     parameter W = `WORD_WIDTH
 ) (
-    input wire reg_write_en,
+    input wire clk, rst,
+
+    input wire reg_write,
     input wire[W-1:0] alu_result, mem_data, pc,
     input wire[`REG_ADDR_W-1:0] rd, rt,
     input wire[`REG_W_SRC_WIDTH-1:0] reg_write_src,
@@ -15,10 +17,10 @@ module writeback #(
     output reg[`REG_ADDR_W-1:0] reg_write_addr,
     output reg[W-1:0] reg_write_data
 );
-    assign write_en = reg_write_en;
+    assign write_en = reg_write;
 
     always @(*) begin
-        if (write_en) begin
+        if (reg_write) begin
             case (reg_write_src)
                 `REG_W_SRC_ALU:
                     reg_write_data = alu_result;

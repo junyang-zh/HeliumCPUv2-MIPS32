@@ -21,9 +21,7 @@ module dbg_imem #(
         */
     end
 
-    always @(posedge clk) begin
-        if (!rst) begin
-            data <= mem[addr[12:2]];
-        end
+    always @(*) begin
+        data <= mem[addr[12:2]];
     end
 endmodule

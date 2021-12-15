@@ -1,10 +1,14 @@
+// cpu.v: single cycle cpu
+// implemented all MIPS-C except MULT/DIV and privilege/trap series
+// 41 instructions
+
 `include "defines.v"
 
 module cpu #(
     parameter W = `WORD_WIDTH
 ) (
     // Clock and reset signals
-	input wire clk, rst,
+	input wire main_clk, wb_clk, rst,
     // Program counter and fetched instruction
 	output wire[W-1:0] pc,
 	input wire[W-1:0] inst,
@@ -25,7 +29,7 @@ module cpu #(
     wire[W-1:0] rs_val, rt_val, rd_val, imm, alu_result;
 
     pc_with_addr_mux pc_inst(
-        .clk(clk), .rst(rst),
+        .clk(main_clk), .rst(rst),
         .stall(`FALSE),
         .can_branch(can_branch),
         .branch_take(alu_result[0]),
@@ -60,11 +64,12 @@ module cpu #(
     wire[`ALUOP_WIDTH-1:0] alu_op;
     wire[`ALU_SRC_WIDTH-1:0] alu_op1_src, alu_op2_src;
 
-    wire rs_read_en, rt_read_en, reg_write_en;
+    wire rs_read_en, rt_read_en, reg_write;
     wire[`REG_W_SRC_WIDTH-1:0] reg_write_src;
     wire[`REG_W_DST_WIDTH-1:0] reg_write_dst;
 
     wire mem_read_en, mem_write_en;
+    wire[`L_S_MODE_W-1:0] l_s_mode;
 
     control control_inst(
         .op_code(op_code),
@@ -80,23 +85,21 @@ module cpu #(
         .targ_else_offset(targ_else_offset),
         .pc_addr_src_reg(pc_addr_src_reg),
 
-        .rs_read_en(rs_read_en), .rt_read_en(rt_read_en), .reg_write_en(reg_write_en),
+        .rs_read_en(rs_read_en), .rt_read_en(rt_read_en), .reg_write(reg_write),
         .reg_write_src(reg_write_src),
         .reg_write_dst(reg_write_dst),
 
-        .mem_read_en(mem_read_en), .mem_write_en(mem_write_en)
+        .mem_read_en(mem_read_en), .mem_write_en(mem_write_en),
+        .l_s_mode(l_s_mode)
     );
 
     // EX stage
-    // EXPRIMENTAL:
-    // wire reg_write_en = `FALSE; NOT TILL WB !!
-    // wire[`REG_ADDR_W-1:0] reg_write_dst = rd_addr; NONONONO WB!
     wire write_en;
     wire[`REG_ADDR_W-1:0] reg_write_addr;
     wire[W-1:0] reg_write_data;
 
     regfile regfile_inst(
-        .clk(clk), .rst(rst),
+        .clk(wb_clk), .rst(rst),
         .rs_en(rs_read_en),
         .rs_addr(rs_addr),
         .rs_data(rs_val),
@@ -122,6 +125,7 @@ module cpu #(
     mem mem_inst(
         .mem_read_en(mem_read_en), .mem_write_en(mem_write_en),
         .mem_addr(alu_result),
+        .l_s_mode(l_s_mode),
         .mem_write_data(rt_val), .mem_read_data(mem_read_data),
         // not exactly rt_val for h and b, BUGGY!
 
@@ -136,7 +140,7 @@ module cpu #(
     // WB stage
 
     writeback wb_inst(
-        .reg_write_en(reg_write_en),
+        .reg_write(reg_write),
         .alu_result(alu_result), .mem_data(mem_read_data), .pc(pc),
         .rd(rd_addr), .rt(rt_addr),
         .reg_write_src(reg_write_src),
