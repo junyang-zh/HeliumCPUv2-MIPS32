@@ -1,15 +1,20 @@
+INCLUDES = includes
 COMMON = common
 SINGLE_CYCLE = single_cycle
 MULTICYCLE = multicycle
 PIPELINE = pipeline
-
 SIM = sim
-TARGET = target
 
-single_cycle: $(SIM)/testbench.v $(wildcard $(COMMON)/*.v $(SINGLE_CYCLE)/*.v)
-	mkdir -p $(TARGET)/$(SINGLE_CYCLE)
-	iverilog -o $(TARGET)/$(SINGLE_CYCLE)/sim.vvp -I $(COMMON) $^
-	cd $(TARGET)/$(SINGLE_CYCLE) && vvp sim.vvp
+COMMON_DIRS := $(shell find $(COMMON) -maxdepth 3 -type d)
+COMMON_FILES = $(foreach dir, $(COMMON_DIRS), $(wildcard $(dir)/*.v))
+
+TARGET = target
+SINGLE_CYCLE_TARGET = $(TARGET)/$(SINGLE_CYCLE)
+
+single_cycle: $(SIM)/testbench.v $(COMMON_FILES) $(wildcard $(SINGLE_CYCLE)/*.v)
+	mkdir -p $(SINGLE_CYCLE_TARGET)
+	iverilog -o $(SINGLE_CYCLE_TARGET)/sim.vvp -I $(INCLUDES) $^
+	cd $(SINGLE_CYCLE_TARGET) && vvp sim.vvp
 
 multicycle:
 

@@ -16,18 +16,16 @@ module regfile #(
     output reg[W-1:0] rt_data,
     // Inputs: rd
     input wire write_en,
-    input wire[RW-1:0] rd_addr,
-    input wire[W-1:0] rd_data
+    input wire[RW-1:0] write_addr,
+    input wire[W-1:0] write_data
 );
     // The regfile, r0 will always be zero thus not used
     reg[W-1:0] regs[W-1:0];
 
-    wire[W-1:0] dbg21 = regs[`REG_ADDR_W'd21];
-
-    // Write rd
+    // Write
     always @(posedge clk) begin
-        if (!rst && write_en && rd_addr != `REG_ZERO) begin
-            regs[rd_addr] <= rd_data;
+        if (!rst && write_en && write_addr != `REG_ZERO) begin
+            regs[write_addr] <= write_data;
         end
     end
     // Read rs

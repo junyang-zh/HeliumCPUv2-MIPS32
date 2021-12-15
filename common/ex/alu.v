@@ -70,6 +70,8 @@ endmodule
 module alu_with_src_mux #(
     parameter W = `WORD_WIDTH
 ) (
+    input wire clk,
+
     input wire[`ALU_SRC_WIDTH-1:0] alu_op1_src, alu_op2_src, // MUX condition
     input wire[W-1:0] rs_val, rt_val, imm, pc,          // Possible srcs
 
@@ -78,7 +80,7 @@ module alu_with_src_mux #(
 );
     reg[W-1:0] op1, op2;
     
-    always @(*) begin // MUX
+    always @(posedge clk) begin // MUX
         case (alu_op1_src)
             `ALU_OP_SRC_ZERO:   op1 <= `ZERO_WORD;
             `ALU_OP_SRC_IMM:    op1 <= imm;

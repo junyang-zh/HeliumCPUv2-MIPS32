@@ -5,7 +5,7 @@
 module decoder #(
     parameter W = `WORD_WIDTH
 ) (
-    // input wire clk, rst, now not used
+    input wire clk, rst,
     input wire[W-1:0] inst,
 
     output reg[1:0] inst_type,
@@ -18,10 +18,23 @@ module decoder #(
     output reg[W-1:0] imm,
     // R
     output reg[`REG_ADDR_W-1:0] rd,
-    output reg[`WORD_INDEX_W-1:0] shamt
+    output reg[`WORD_INDEX_W-1:0] shamt,
+
+    // Control signals, see control.v
+    output wire[`ALUOP_WIDTH-1:0] alu_op,
+    output wire[`ALU_SRC_WIDTH-1:0] alu_op1_src,
+    output wire[`ALU_SRC_WIDTH-1:0] alu_op2_src,
+    output wire can_branch,
+    output wire targ_else_offset,
+    output wire pc_addr_src_reg,
+    output wire rs_read_en, rt_read_en, reg_write,
+    output wire[`REG_W_SRC_WIDTH-1:0] reg_write_src,
+    output wire[`REG_W_DST_WIDTH-1:0] reg_write_dst,
+    output wire mem_read_en, mem_write_en,
+    output wire[`L_S_MODE_W-1:0] l_s_mode
 );
-    // All combinational logic
-    always @(*) begin
+
+    always @(posedge clk) begin
         // Get OP code
         op_code = inst[W-1:W-`OP_WIDTH];
         // Decide instruction type
@@ -73,5 +86,31 @@ module decoder #(
             default: op_code = `OP_ERR;
         endcase
     end
+
+    // Control module
+
+    control control_inst(
+        .rst(rst),
+
+        .op_code(op_code),
+        .funct(funct),
+        .rt(rt),
+        .inst_type(inst_type),
+        
+        .alu_op(alu_op),
+        .alu_op1_src(alu_op1_src),
+        .alu_op2_src(alu_op2_src),
+        
+        .can_branch(can_branch),
+        .targ_else_offset(targ_else_offset),
+        .pc_addr_src_reg(pc_addr_src_reg),
+
+        .rs_read_en(rs_read_en), .rt_read_en(rt_read_en), .reg_write(reg_write),
+        .reg_write_src(reg_write_src),
+        .reg_write_dst(reg_write_dst),
+
+        .mem_read_en(mem_read_en), .mem_write_en(mem_write_en),
+        .l_s_mode(l_s_mode)
+    );
 
 endmodule

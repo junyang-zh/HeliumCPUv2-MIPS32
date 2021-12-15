@@ -1,6 +1,8 @@
 // # Debug and simulations
 `define IMEM_SIM_FILE   "../../sim/imem.text"
 `define DMEM_SIM_FILE   "../../sim/dmem.data"
+`define REG_DUMP_FILE   "../../target/reg_dump.txt"
+`define MEM_DUMP_FILE   "../../target/mem_dump.txt"
 
 // # High is 1
 `define TRUE    1'b1
@@ -100,7 +102,7 @@
 `define LUI     6'b001111
 `define ORI     6'b001101
 `define SLTI    6'b001010
-`define SLTIU    6'b001011
+`define SLTIU   6'b001011
 `define XORI    6'b001110
 
 `define BEQ     6'b000100

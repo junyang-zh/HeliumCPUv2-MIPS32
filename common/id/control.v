@@ -3,6 +3,8 @@
 `include "defines.v"
 
 module control (
+    input wire rst,
+
     input wire[`OP_WIDTH-1:0] op_code,
     input wire[`FUNCT_WIDTH-1:0] funct,
     input wire[`REG_ADDR_W-1:0] rt,
@@ -24,6 +26,17 @@ module control (
     output reg[`L_S_MODE_W-1:0] l_s_mode        // word, halfword or byte
 );
     always @(*) begin
+        // Respond to rst, set important controls invalid
+        if (rst) begin
+            can_branch = `FALSE;
+            targ_else_offset = `FALSE;
+            pc_addr_src_reg = `FALSE;
+            rs_read_en = `FALSE;
+            rt_read_en = `FALSE;
+            reg_write = `FALSE;
+            mem_read_en = `FALSE;
+            mem_write_en = `FALSE;
+        end
 
         // ALU CTRL --------------------------------------------------//
         case (inst_type)

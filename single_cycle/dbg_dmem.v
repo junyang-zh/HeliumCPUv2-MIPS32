@@ -1,5 +1,7 @@
 // dbg_dmem.v: data memory instance for simulation
 
+`timescale 10ns/1ns
+
 `include "defines.v"
 
 module dbg_dmem #(
@@ -23,8 +25,16 @@ module dbg_dmem #(
     // "virtual memory"
     wire[W-1:0] read_addr_d = read_addr - DATA_SEGMENT;
     wire[W-1:0] write_addr_d = write_addr - DATA_SEGMENT;
+
+    // Dump the memory for debug
+    integer mem_dump_file, i;
     initial begin
         $readmemh(`DMEM_SIM_FILE, mem);
+        /*mem_dump_file = $fopen(`MEM_DUMP_FILE, "w+");
+        #5000
+        for (i = 0; i < DMEM_SIZE; i = i + 1) begin
+            $fdisplay(mem_dump_file, "%08x: %08x", (i << 2), mem[i]);
+        end*/
     end
 
     // Write words that are aligned

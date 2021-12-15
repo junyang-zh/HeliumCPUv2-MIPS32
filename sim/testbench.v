@@ -24,10 +24,11 @@ module tb_top;
       $dumpvars(0, tb_top);
    end
 
+   // Generate rst
    initial begin
       rst = 1;
       #25 rst = 0;
-      #1000;
+      #5000;
       $finish;
    end
 
