@@ -12,7 +12,7 @@ module top #(
         .clk(clk), .rst(rst),
         .pc_clk(pc_clk),
         .pc(pc),
-        .inst(inst),
+        .read_inst(inst),
         .load_clk(load_clk),
         .load_en(load_en),
         .l_addr(l_addr),

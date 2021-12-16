@@ -10,7 +10,7 @@ module cpu #(
     // Program counter and fetched instruction
     output wire pc_clk,
 	output wire[W-1:0] pc,
-	input wire[W-1:0] inst,
+	input wire[W-1:0] read_inst,
     // Load
     output wire load_clk, load_en,
     output wire[W-1:0] l_addr,
@@ -39,7 +39,7 @@ module cpu #(
 
     // PC ctrls
     wire can_branch, targ_else_offset, pc_addr_src_reg;
-    wire[W-1:0] rs_val, rt_val, rd_val, imm, alu_result;
+    wire[W-1:0] inst, rs_val, rt_val, rd_val, imm, alu_result;
 
     pc_with_addr_mux pc_inst(
         .clk(if_clk), .rst(rst),
@@ -52,7 +52,9 @@ module cpu #(
         .rs_val(rs_val),
         .imm(imm),
 
-        .pc(pc)
+        .pc(pc),
+        .read_inst(read_inst),
+        .inst(inst)
     );
 
     // ID stage

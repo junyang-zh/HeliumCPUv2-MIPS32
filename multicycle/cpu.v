@@ -8,9 +8,9 @@ module cpu #(
     // Clock and reset signals
 	input wire clk, rst,
     // Program counter and fetched instruction
-    output wire pc_clk,
+    output wire pc_clk, pc_en,
 	output wire[W-1:0] pc,
-	input wire[W-1:0] inst,
+	input wire[W-1:0] read_inst,
     // Load
     output wire load_clk, load_en,
     output wire[W-1:0] l_addr,
@@ -25,15 +25,18 @@ module cpu #(
 
     wire if_clk, id_clk, ex_clk, mem_clk, wb_clk;
     wire[`OP_WIDTH-1:0] op_code;
+    wire[`FUNCT_WIDTH-1:0] funct;
     counter counter_inst(
         .clk(clk), .rst(rst),
-        .op_code(op_code),
+        .op_code(op_code), .funct(funct),
 
         .if_clk(if_clk),
         .id_clk(id_clk),
         .ex_clk(ex_clk),
         .mem_clk(mem_clk),
-        .wb_clk(wb_clk)
+        .wb_clk(wb_clk),
+
+        .inst_read_en(pc_en)
     );
     assign pc_clk = if_clk, load_clk = mem_clk, store_clk = mem_clk;
 
@@ -41,7 +44,7 @@ module cpu #(
 
     // PC ctrls
     wire can_branch, targ_else_offset, pc_addr_src_reg;
-    wire[W-1:0] rs_val, rt_val, rd_val, imm, alu_result;
+    wire[W-1:0] inst, rs_val, rt_val, rd_val, imm, alu_result;
 
     pc_with_addr_mux pc_inst(
         .clk(if_clk), .rst(rst),
@@ -54,7 +57,9 @@ module cpu #(
         .rs_val(rs_val),
         .imm(imm),
 
-        .pc(pc)
+        .pc(pc),
+        .read_inst(read_inst),
+        .inst(inst)
     );
 
     // ID stage
@@ -75,7 +80,7 @@ module cpu #(
         .clk(id_clk), .rst(rst),
         .inst(inst),
 
-        .op_code(op_code),
+        .op_code(op_code), .funct(funct),
 
         .rs(rs_addr), .rt(rt_addr),
         .imm(imm),

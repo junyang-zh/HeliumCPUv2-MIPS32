@@ -6,13 +6,13 @@ module top #(
     input wire clk, rst
 );
     wire[W-1:0] pc, inst, l_addr, l_data, s_addr, s_data;
-    wire pc_clk, load_clk, load_en, store_clk, store_en;
+    wire pc_clk, pc_en, load_clk, load_en, store_clk, store_en;
 
     cpu cpu_inst(
         .clk(clk), .rst(rst),
         .pc_clk(pc_clk),
-        .pc(pc),
-        .inst(inst),
+        .pc(pc), .pc_en(pc_en),
+        .read_inst(inst),
         .load_clk(load_clk),
         .load_en(load_en),
         .l_addr(l_addr),
@@ -23,20 +23,20 @@ module top #(
         .s_data(s_data)
     );
 
-    dbg_imem imem(
-        .clk(~pc_clk), .rst(rst), // negedge
-        .addr(pc),
-        .data(inst)
-    );
+    wire[W-1:0] mem_read_addr = (pc_en ? pc : l_addr);
+    wire[W-1:0] mem_read_data;
+    wire mem_clk = ~(load_clk | store_clk | pc_clk);
 
-    dbg_dmem dmem(
-        .clk(~(load_clk | store_clk)), // negedge
+    dbg_mem mem_inst(
+        .clk(mem_clk), // negedge
         .rst(rst),
-        .read_en(load_en),
-        .read_addr(l_addr),
-        .read_data(l_data),
+        .read_en(load_en | pc_en),
+        .read_addr(mem_read_addr),
+        .read_data(mem_read_data),
         .write_en(store_en),
         .write_addr(s_addr),
         .write_data(s_data)
     );
+
+    assign inst = mem_read_data, l_data = mem_read_data;
 endmodule

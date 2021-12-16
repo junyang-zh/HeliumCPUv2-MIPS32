@@ -16,19 +16,25 @@ module pc_with_addr_mux #(
     input wire[W-1:0] rs_val,   // MUX v1
     input wire[W-1:0] imm,      // MUX v2
 
-    output reg[W-1:0] pc
+    output reg[W-1:0] pc,
+    input wire[W-1:0] read_inst,
+    output reg[W-1:0] inst
 );
     wire[W-1:0] pc_targ_addr;
     assign pc_targ_addr = (pc_addr_src_reg ? rs_val : imm);
-
+    // posedge pc
     always @(posedge clk) begin
         if (rst) begin
-            pc <= `ZERO_WORD;
+            pc = `ZERO_WORD;
         end
         else begin
-            pc <=   (can_branch && branch_take) ?
+            pc =    (can_branch && branch_take) ?
                     (targ_else_offset ? pc_targ_addr : (pc + pc_targ_addr + 4)) :
                     pc + 4;
         end
+    end
+    // negedge fetch
+    always @(negedge clk) begin
+        inst = read_inst;
     end
 endmodule

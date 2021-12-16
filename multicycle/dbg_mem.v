@@ -1,13 +1,14 @@
-// dbg_dmem.v: data memory instance for simulation
+// dbg_mem.v: memory instance for simulation
 
 `timescale 10ns/1ns
 
 `include "defines.v"
 
-module dbg_dmem #(
+module dbg_mem #(
     parameter W = `WORD_WIDTH,
-    parameter DMEM_SIZE = 4096,
-    parameter DATA_SEGMENT = `WORD_WIDTH'h10010000 // .data segment, "do the os job"
+    parameter DMEM_SIZE = 8192,
+    parameter DATA_SEGMENT = `WORD_WIDTH'h10010000,// .data segment, "do the os job"
+    parameter DATA_START = `WORD_WIDTH'd4096
 ) (
     input wire clk, rst,
 
@@ -23,18 +24,18 @@ module dbg_dmem #(
     reg[W-1:0] mem[DMEM_SIZE-1:0];
 
     // "virtual memory"
-    wire[W-1:0] read_addr_d = read_addr - DATA_SEGMENT;
-    wire[W-1:0] write_addr_d = write_addr - DATA_SEGMENT;
+    wire[W-1:0] read_addr_d = (read_addr & DATA_SEGMENT) ?
+                                (read_addr - DATA_SEGMENT + DATA_START):
+                                read_addr;
+    wire[W-1:0] write_addr_d = (write_addr & DATA_SEGMENT) ?
+                                (write_addr - DATA_SEGMENT + DATA_START):
+                                write_addr;
 
     // Dump the memory for debug
     integer mem_dump_file, i;
     initial begin
-        $readmemh(`DMEM_SIM_FILE, mem);
-        /*mem_dump_file = $fopen(`MEM_DUMP_FILE, "w+");
-        #5000
-        for (i = 0; i < DMEM_SIZE; i = i + 1) begin
-            $fdisplay(mem_dump_file, "%08x: %08x", (i << 2), mem[i]);
-        end*/
+        $readmemh(`IMEM_SIM_FILE, mem, 0, DATA_START-1);
+        $readmemh(`DMEM_SIM_FILE, mem, DATA_START, DMEM_SIZE-1);
     end
 
     // Write words that are aligned

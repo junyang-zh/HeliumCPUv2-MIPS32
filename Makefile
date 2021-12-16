@@ -8,6 +8,9 @@ SIM = sim
 COMMON_DIRS := $(shell find $(COMMON) -maxdepth 3 -type d)
 COMMON_FILES = $(foreach dir, $(COMMON_DIRS), $(wildcard $(dir)/*.v))
 
+# Make every time, avoid "* is up to date"
+.PHONY: $(COMMON_FILES)
+
 TARGET = target
 SINGLE_CYCLE_TARGET = $(TARGET)/$(SINGLE_CYCLE)
 MULTICYCLE_TARGET = $(TARGET)/$(MULTICYCLE)
