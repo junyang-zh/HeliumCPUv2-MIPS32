@@ -25,7 +25,7 @@ module mem #(
     output reg[W-1:0] s_addr,
 	output reg[W-1:0] s_data
 );
-    always @(*) begin           // Sync rst
+    always @(*) begin           // Async rst
         if (rst) begin
             load_en <= `FALSE;
             store_en <= `FALSE;

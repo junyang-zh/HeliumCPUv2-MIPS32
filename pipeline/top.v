@@ -6,11 +6,10 @@ module top #(
     input wire clk, rst
 );
     wire[W-1:0] pc, inst, l_addr, l_data, s_addr, s_data;
-    wire pc_clk, load_clk, load_en, store_clk, store_en;
+    wire load_clk, load_en, store_en;
 
     cpu cpu_inst(
         .clk(clk), .rst(rst),
-        .pc_clk(pc_clk),
         .pc(pc),
         .read_inst(inst),
         .load_clk(load_clk),
@@ -24,13 +23,13 @@ module top #(
     );
 
     dbg_imem imem(
-        .clk(~pc_clk), .rst(rst), // negedge
+        .clk(~clk), .rst(rst), // negedge
         .addr(pc),
         .data(inst)
     );
 
     dbg_dmem dmem(
-        .clk(~(load_clk | store_clk)), // negedge
+        .clk(~clk), // negedge
         .rst(rst),
         .read_en(load_en),
         .read_addr(l_addr),

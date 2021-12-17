@@ -8,7 +8,6 @@ module cpu #(
     // Clock and reset signals
 	input wire clk, rst,
     // Program counter and fetched instruction
-    output wire pc_clk,
 	output wire[W-1:0] pc,
 	input wire[W-1:0] read_inst,
     // Load
@@ -24,11 +23,15 @@ module cpu #(
 
     // PC ctrls
     wire can_branch, targ_else_offset, pc_addr_src_reg;
-    wire[W-1:0] inst, rs_val, rt_val, rd_val, imm, alu_result;
+    // Connect ID backward signals
+    wire[W-1:0] inst, rs_val, rt_val, rd_val, imm;
+    // Connect EX backward signals
+    wire[W-1:0] alu_result;
 
     pc_with_addr_mux pc_inst(
         .clk(clk), .rst(rst),
         // TODO: flush, stall
+        .flush(`FALSE), .stall(`FALSE),
         .can_branch(can_branch),
         .branch_take(alu_result[0]),
         .targ_else_offset(targ_else_offset),
@@ -47,10 +50,12 @@ module cpu #(
     // Decoder to stages
     wire[`REG_ADDR_W-1:0] rs_addr, rt_addr, rd_addr;
     wire[`WORD_INDEX_W-1:0] shamt;
+    // Control to reg read
+    wire rs_read_en, rt_read_en;
     // Control to stages
     wire[`ALUOP_WIDTH-1:0] alu_op;
     wire[`ALU_SRC_WIDTH-1:0] alu_op1_src, alu_op2_src;
-    wire rs_read_en, rt_read_en, reg_write;
+    wire reg_write;
     wire[`REG_W_SRC_WIDTH-1:0] reg_write_src;
     wire[`REG_W_DST_WIDTH-1:0] reg_write_dst;
     wire mem_read_en, mem_write_en;
@@ -77,10 +82,9 @@ module cpu #(
         .mem_read_en(mem_read_en), .mem_write_en(mem_write_en),
         .l_s_mode(l_s_mode)
     );
-
-    // EX stage
-
-    wire write_en;
+    
+    // Connect backward WB signals 
+    wire reg_write_en;
     wire[`REG_ADDR_W-1:0] reg_write_addr;
     wire[W-1:0] reg_write_data;
 
@@ -92,17 +96,65 @@ module cpu #(
         .rt_en(rt_read_en),
         .rt_addr(rt_addr),
         .rt_data(rt_val),
-        .write_en(write_en),
+        .write_en(reg_write_en),
         .write_addr(reg_write_addr),
         .write_data(reg_write_data)
     );
 
+    // ID-EX interstage
+
+    wire[`ALUOP_WIDTH-1:0] ex_alu_op;
+    wire[`ALU_SRC_WIDTH-1:0] ex_alu_op1_src, ex_alu_op2_src;
+    wire ex_mem_read_en, ex_mem_write_en;
+    wire[`L_S_MODE_W-1:0] ex_l_s_mode;
+    wire ex_reg_write;
+    wire[`REG_W_SRC_WIDTH-1:0] ex_reg_write_src;
+    wire[`REG_W_DST_WIDTH-1:0] ex_reg_write_dst;
+
+    ctrl_regs #(23) id_ex (
+        .clk(clk), .rst(rst),
+        .ctrl_in({
+            alu_op, alu_op1_src, alu_op2_src,
+            mem_read_en, mem_write_en, l_s_mode,
+            reg_write, reg_write_src, reg_write_dst
+        }),
+        .ctrl_out({
+            ex_alu_op, ex_alu_op1_src, ex_alu_op2_src,
+            ex_mem_read_en, ex_mem_write_en, ex_l_s_mode,
+            ex_reg_write, ex_reg_write_src, ex_reg_write_dst
+        })
+    );
+
+    // EX stage
+
     alu_with_src_mux alu_inst(
         .clk(clk),
-        .alu_op1_src(alu_op1_src), .alu_op2_src(alu_op2_src),
+        // TODO stall
+        .stall(`FALSE),
+        .alu_op1_src(ex_alu_op1_src), .alu_op2_src(ex_alu_op2_src),
         .rs_val(rs_val), .rt_val(rt_val), .imm(imm), .pc(pc),
-        .alu_op(alu_op),
+        .alu_op(ex_alu_op),
         .result(alu_result)
+    );
+
+    // EX-MEM interstage
+
+    wire mem_mem_read_en, mem_mem_write_en;
+    wire[`L_S_MODE_W-1:0] mem_l_s_mode;
+    wire mem_reg_write;
+    wire[`REG_W_SRC_WIDTH-1:0] mem_reg_write_src;
+    wire[`REG_W_DST_WIDTH-1:0] mem_reg_write_dst;
+
+    ctrl_regs #(10) ex_mem (
+        .clk(clk), .rst(rst),
+        .ctrl_in({
+            ex_mem_read_en, ex_mem_write_en, ex_l_s_mode,
+            ex_reg_write, ex_reg_write_src, ex_reg_write_dst
+        }),
+        .ctrl_out({
+            mem_mem_read_en, mem_mem_write_en, mem_l_s_mode,
+            mem_reg_write, mem_reg_write_src, mem_reg_write_dst
+        })
     );
 
     // MEM stage
@@ -112,9 +164,9 @@ module cpu #(
     mem mem_inst(
         .clk(clk), .rst(rst),
 
-        .mem_read_en(mem_read_en), .mem_write_en(mem_write_en),
+        .mem_read_en(mem_mem_read_en), .mem_write_en(mem_mem_write_en),
         .mem_addr(alu_result),
-        .l_s_mode(l_s_mode),
+        .l_s_mode(mem_l_s_mode),
         .mem_write_data(rt_val), .mem_read_data(mem_read_data),
 
         .load_en(load_en),
@@ -125,16 +177,33 @@ module cpu #(
         .s_data(s_data)
     );
 
+    // MEM-WB interstage
+
+    wire wb_reg_write;
+    wire[`REG_W_SRC_WIDTH-1:0] wb_reg_write_src;
+    wire[`REG_W_DST_WIDTH-1:0] wb_reg_write_dst;
+
+    ctrl_regs #(5) mem_wb (
+        .clk(clk), .rst(rst),
+        .ctrl_in({
+            mem_reg_write, mem_reg_write_src, mem_reg_write_dst
+        }),
+        .ctrl_out({
+            wb_reg_write, wb_reg_write_src, wb_reg_write_dst
+        })
+    );
+
+
     // WB stage
 
     writeback wb_inst(
-        .reg_write(reg_write),
+        .reg_write(wb_reg_write),
         .alu_result(alu_result), .mem_data(mem_read_data), .pc(pc), .imm(imm),
         .rd(rd_addr), .rt(rt_addr),
-        .reg_write_src(reg_write_src),
-        .reg_write_dst(reg_write_dst),
+        .reg_write_src(wb_reg_write_src),
+        .reg_write_dst(wb_reg_write_dst),
 
-        .write_en(write_en),
+        .write_en(reg_write_en),
         .reg_write_addr(reg_write_addr),
         .reg_write_data(reg_write_data)
     );
