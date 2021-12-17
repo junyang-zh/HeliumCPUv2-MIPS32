@@ -125,7 +125,7 @@ module cpu #(
     wire[W-1:0] mem_write_data, mem_read_data;
 
     mem mem_inst(
-        .clk(mem_clk),
+        .clk(mem_clk), .rst(rst),
 
         .mem_read_en(mem_read_en), .mem_write_en(mem_write_en),
         .mem_addr(alu_result),

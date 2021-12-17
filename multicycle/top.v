@@ -25,10 +25,10 @@ module top #(
 
     wire[W-1:0] mem_read_addr = (pc_en ? pc : l_addr);
     wire[W-1:0] mem_read_data;
-    wire mem_clk = ~(load_clk | store_clk | pc_clk);
+    wire mem_clk = ~store_clk; // Negedge write
 
     dbg_mem mem_inst(
-        .clk(mem_clk), // negedge
+        .clk(mem_clk),
         .rst(rst),
         .read_en(load_en | pc_en),
         .read_addr(mem_read_addr),

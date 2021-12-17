@@ -7,7 +7,7 @@ module mem #(
     parameter HW = `HALF_WORD_WIDTH,
     parameter BW = `BYTE_WIDTH
 ) (
-    input wire clk,
+    input wire clk, rst,
 
     input wire mem_read_en, mem_write_en,
     input wire[W-1:0] mem_addr, // mem addr can only be alu_result (l, s)
@@ -25,15 +25,21 @@ module mem #(
     output reg[W-1:0] s_addr,
 	output reg[W-1:0] s_data
 );
+    always @(*) begin           // Sync rst
+        if (rst) begin
+            load_en <= `FALSE;
+            store_en <= `FALSE;
+        end
+    end
 
-    always @(posedge clk) begin // posedge query
+    always @(posedge clk) begin // Posedge query
         load_en <= mem_read_en;
         store_en <= mem_write_en;
         l_addr <= mem_addr;
         s_addr <= mem_addr;
     end
 
-    always @(negedge clk) begin // negedge read
+    always @(negedge clk) begin // Negedge read
         case (l_s_mode)
             `L_S_WORD: begin
                 s_data <= mem_write_data;
