@@ -68,7 +68,7 @@ module cpu #(
     wire[`ALU_SRC_WIDTH-1:0] alu_op1_src, alu_op2_src;
     wire rs_read_en, rt_read_en, reg_write;
     wire[`REG_W_SRC_WIDTH-1:0] reg_write_src;
-    wire[`REG_W_DST_WIDTH-1:0] reg_write_dst;
+    wire[`REG_ADDR_W-1:0] reg_write_addr;
     wire mem_read_en, mem_write_en;
     wire[`L_S_MODE_W-1:0] l_s_mode;
 
@@ -89,15 +89,12 @@ module cpu #(
         .pc_addr_src_reg(pc_addr_src_reg),
         .rs_read_en(rs_read_en), .rt_read_en(rt_read_en), .reg_write(reg_write),
         .reg_write_src(reg_write_src),
-        .reg_write_dst(reg_write_dst),
+        .reg_write_addr(reg_write_addr),
         .mem_read_en(mem_read_en), .mem_write_en(mem_write_en),
         .l_s_mode(l_s_mode)
     );
 
-    // EX stage
-
     wire write_en;
-    wire[`REG_ADDR_W-1:0] reg_write_addr;
     wire[W-1:0] reg_write_data;
 
     regfile regfile_inst(
@@ -112,6 +109,8 @@ module cpu #(
         .write_addr(reg_write_addr),
         .write_data(reg_write_data)
     );
+
+    // EX stage
 
     alu_with_src_mux alu_inst(
         .clk(ex_clk),
@@ -147,12 +146,9 @@ module cpu #(
     writeback wb_inst(
         .reg_write(reg_write),
         .alu_result(alu_result), .mem_data(mem_read_data), .pc(pc), .imm(imm),
-        .rd(rd_addr), .rt(rt_addr),
         .reg_write_src(reg_write_src),
-        .reg_write_dst(reg_write_dst),
 
         .write_en(write_en),
-        .reg_write_addr(reg_write_addr),
         .reg_write_data(reg_write_data)
     );
     

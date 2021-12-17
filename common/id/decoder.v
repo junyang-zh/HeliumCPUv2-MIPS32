@@ -29,7 +29,7 @@ module decoder #(
     output wire pc_addr_src_reg,
     output wire rs_read_en, rt_read_en, reg_write,
     output wire[`REG_W_SRC_WIDTH-1:0] reg_write_src,
-    output wire[`REG_W_DST_WIDTH-1:0] reg_write_dst,
+    output reg[`REG_ADDR_W-1:0] reg_write_addr,
     output wire mem_read_en, mem_write_en,
     output wire[`L_S_MODE_W-1:0] l_s_mode
 );
@@ -88,6 +88,8 @@ module decoder #(
     end
 
     // Control module
+    
+    wire[`REG_W_DST_WIDTH-1:0] reg_write_dst;
 
     control control_inst(
         .rst(rst),
@@ -112,5 +114,17 @@ module decoder #(
         .mem_read_en(mem_read_en), .mem_write_en(mem_write_en),
         .l_s_mode(l_s_mode)
     );
+
+    // generate register write destination
+
+    always @(*) case (reg_write_dst)
+        `REG_W_DST_RD:
+            reg_write_addr = rd;
+        `REG_W_DST_RT:
+            reg_write_addr = rt;
+        `REG_W_DST_R31:
+            reg_write_addr = `REG_ADDR_W'd31;
+        default: reg_write_addr = `REG_ADDR_W'b0;
+    endcase
 
 endmodule
