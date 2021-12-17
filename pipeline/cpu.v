@@ -67,7 +67,7 @@ module cpu #(
     wire[`ALU_SRC_WIDTH-1:0] alu_op1_src, alu_op2_src;
     wire reg_write;
     wire[`REG_W_SRC_WIDTH-1:0] reg_write_src;
-    wire[`REG_W_DST_WIDTH-1:0] reg_write_dst;
+    wire[`REG_ADDR_W-1:0] reg_write_addr;
     wire mem_read_en, mem_write_en;
     wire[`L_S_MODE_W-1:0] l_s_mode;
 
@@ -88,15 +88,15 @@ module cpu #(
         .pc_addr_src_reg(pc_addr_src_reg),
         .rs_read_en(rs_read_en), .rt_read_en(rt_read_en), .reg_write(reg_write),
         .reg_write_src(reg_write_src),
-        .reg_write_dst(reg_write_dst),
+        .reg_write_addr(reg_write_addr),
         .mem_read_en(mem_read_en), .mem_write_en(mem_write_en),
         .l_s_mode(l_s_mode)
     );
     
     // Connect backward WB signals 
     wire reg_write_en;
-    wire[`REG_ADDR_W-1:0] reg_write_addr;
     wire[W-1:0] reg_write_data;
+    wire[`REG_ADDR_W-1:0] wb_reg_write_addr;
 
     regfile regfile_inst(
         .clk(clk), .rst(rst),
@@ -107,7 +107,7 @@ module cpu #(
         .rt_addr(rt_addr),
         .rt_data(rt_val),
         .write_en(reg_write_en),
-        .write_addr(reg_write_addr),
+        .write_addr(wb_reg_write_addr),
         .write_data(reg_write_data)
     );
 
@@ -119,25 +119,23 @@ module cpu #(
     wire[`L_S_MODE_W-1:0] ex_l_s_mode;
     wire ex_reg_write;
     wire[`REG_W_SRC_WIDTH-1:0] ex_reg_write_src;
-    wire[`REG_W_DST_WIDTH-1:0] ex_reg_write_dst;
+    wire[`REG_ADDR_W-1:0] ex_reg_write_addr;
 
-    wire[W-1:0] ex_pc, ex_imm;
-    wire[`REG_ADDR_W-1:0] ex_rs_addr, ex_rt_addr, ex_rd_addr;
-
+    wire[W-1:0] ex_pc, ex_imm, ex_rs_val, ex_rt_val;
 
     ctrl_regs #(1000) id_ex (
         .clk(clk), .rst(rst),
         .ctrl_in({
             alu_op, alu_op1_src, alu_op2_src,
             mem_read_en, mem_write_en, l_s_mode,
-            reg_write, reg_write_src, reg_write_dst,
-            id_pc, imm, rs_addr, rt_addr, rd_addr
+            reg_write, reg_write_src, reg_write_addr,
+            id_pc, imm, rs_val, rt_val
         }),
         .ctrl_out({
             ex_alu_op, ex_alu_op1_src, ex_alu_op2_src,
             ex_mem_read_en, ex_mem_write_en, ex_l_s_mode,
-            ex_reg_write, ex_reg_write_src, ex_reg_write_dst,
-            ex_pc, ex_imm, ex_rs_addr, ex_rt_addr, ex_rd_addr
+            ex_reg_write, ex_reg_write_src, ex_reg_write_addr,
+            ex_pc, ex_imm, ex_rs_val, ex_rt_val
         })
     );
 
@@ -148,7 +146,7 @@ module cpu #(
         // TODO stall
         .stall(`FALSE),
         .alu_op1_src(ex_alu_op1_src), .alu_op2_src(ex_alu_op2_src),
-        .rs_val(rs_val), .rt_val(rt_val), .imm(imm), .pc(pc), // Here imm/pc are not ex_imm/ex_pc
+        .rs_val(ex_rs_val), .rt_val(ex_rt_val), .imm(ex_imm), .pc(ex_pc),
         .alu_op(ex_alu_op),
         .result(alu_result)
     );
@@ -159,22 +157,21 @@ module cpu #(
     wire[`L_S_MODE_W-1:0] mem_l_s_mode;
     wire mem_reg_write;
     wire[`REG_W_SRC_WIDTH-1:0] mem_reg_write_src;
-    wire[`REG_W_DST_WIDTH-1:0] mem_reg_write_dst;
+    wire[`REG_ADDR_W-1:0] mem_reg_write_addr;
 
-    wire[W-1:0] mem_pc, mem_imm;
-    wire[`REG_ADDR_W-1:0] mem_rs_addr, mem_rt_addr, mem_rd_addr;
+    wire[W-1:0] mem_pc, mem_imm, mem_rt_val;
 
     ctrl_regs #(1000) ex_mem (
         .clk(clk), .rst(rst),
         .ctrl_in({
             ex_mem_read_en, ex_mem_write_en, ex_l_s_mode,
-            ex_reg_write, ex_reg_write_src, ex_reg_write_dst,
-            ex_pc, ex_imm, ex_rs_addr, ex_rt_addr, ex_rd_addr
+            ex_reg_write, ex_reg_write_src, ex_reg_write_addr,
+            ex_pc, ex_imm, ex_rt_val
         }),
         .ctrl_out({
             mem_mem_read_en, mem_mem_write_en, mem_l_s_mode,
-            mem_reg_write, mem_reg_write_src, mem_reg_write_dst,
-            mem_pc, mem_imm, mem_rs_addr, mem_rt_addr, mem_rd_addr
+            mem_reg_write, mem_reg_write_src, mem_reg_write_addr,
+            mem_pc, mem_imm, mem_rt_val
         })
     );
 
@@ -188,7 +185,7 @@ module cpu #(
         .mem_read_en(mem_mem_read_en), .mem_write_en(mem_mem_write_en),
         .mem_addr(alu_result),
         .l_s_mode(mem_l_s_mode),
-        .mem_write_data(rt_val), .mem_read_data(mem_read_data),
+        .mem_write_data(mem_rt_val), .mem_read_data(mem_read_data),
 
         .load_en(load_en),
         .l_addr(l_addr),
@@ -202,20 +199,19 @@ module cpu #(
 
     wire wb_reg_write;
     wire[`REG_W_SRC_WIDTH-1:0] wb_reg_write_src;
-    wire[`REG_W_DST_WIDTH-1:0] wb_reg_write_dst;
+    // Connected at id: wire[`REG_ADDR_W-1:0] wb_reg_write_addr;
 
     wire[W-1:0] wb_pc, wb_imm;
-    wire[`REG_ADDR_W-1:0] wb_rs_addr, wb_rt_addr, wb_rd_addr;
 
     ctrl_regs #(1000) mem_wb (
         .clk(clk), .rst(rst),
         .ctrl_in({
-            mem_reg_write, mem_reg_write_src, mem_reg_write_dst,
-            mem_pc, mem_imm, mem_rs_addr, mem_rt_addr, mem_rd_addr
+            mem_reg_write, mem_reg_write_src, mem_reg_write_addr,
+            mem_pc, mem_imm
         }),
         .ctrl_out({
-            wb_reg_write, wb_reg_write_src, wb_reg_write_dst,
-            wb_pc, wb_imm, wb_rs_addr, wb_rt_addr, wb_rd_addr
+            wb_reg_write, wb_reg_write_src, wb_reg_write_addr,
+            wb_pc, wb_imm
         })
     );
 
@@ -225,12 +221,9 @@ module cpu #(
     writeback wb_inst(
         .reg_write(wb_reg_write),
         .alu_result(alu_result), .mem_data(mem_read_data), .pc(wb_pc), .imm(wb_imm),
-        .rd(wb_rd_addr), .rt(wb_rt_addr),
         .reg_write_src(wb_reg_write_src),
-        .reg_write_dst(wb_reg_write_dst),
 
         .write_en(reg_write_en),
-        .reg_write_addr(reg_write_addr),
         .reg_write_data(reg_write_data)
     );
     
