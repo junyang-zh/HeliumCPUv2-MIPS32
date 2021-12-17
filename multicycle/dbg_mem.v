@@ -35,9 +35,7 @@ module dbg_mem #(
     // Dump the memory for debug
     initial begin
         $readmemh(`IMEM_SIM_FILE, mem, 0);
-        $display("%x", mem[0]);
         $readmemh(`DMEM_SIM_FILE, mem, DATA_START);
-        $display("%x", mem[DATA_START]);
     end
 
     // Write words that are aligned

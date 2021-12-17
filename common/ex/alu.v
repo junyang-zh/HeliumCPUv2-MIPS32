@@ -71,6 +71,7 @@ module alu_with_src_mux #(
     parameter W = `WORD_WIDTH
 ) (
     input wire clk,
+    input wire stall, // For pipeline cpu, set false if not pipelined
 
     input wire[`ALU_SRC_WIDTH-1:0] alu_op1_src, alu_op2_src, // MUX condition
     input wire[W-1:0] rs_val, rt_val, imm, pc,          // Possible srcs
@@ -81,22 +82,24 @@ module alu_with_src_mux #(
     reg[W-1:0] op1, op2;
     
     always @(posedge clk) begin // MUX
-        case (alu_op1_src)
-            `ALU_OP_SRC_ZERO:   op1 <= `ZERO_WORD;
-            `ALU_OP_SRC_IMM:    op1 <= imm;
-            `ALU_OP_SRC_RS:     op1 <= rs_val;
-            `ALU_OP_SRC_RT:     op1 <= rt_val;
-            `ALU_OP_SRC_PC:     op1 <= pc;
-            default:            op1 <= `ZERO_WORD;
-        endcase
-        case (alu_op2_src)
-            `ALU_OP_SRC_ZERO:   op2 <= `ZERO_WORD;
-            `ALU_OP_SRC_IMM:    op2 <= imm;
-            `ALU_OP_SRC_RS:     op2 <= rs_val;
-            `ALU_OP_SRC_RT:     op2 <= rt_val;
-            `ALU_OP_SRC_PC:     op2 <= pc;
-            default:            op2 <= `ZERO_WORD;
-        endcase
+        if (!stall) begin
+            case (alu_op1_src)
+                `ALU_OP_SRC_ZERO:   op1 <= `ZERO_WORD;
+                `ALU_OP_SRC_IMM:    op1 <= imm;
+                `ALU_OP_SRC_RS:     op1 <= rs_val;
+                `ALU_OP_SRC_RT:     op1 <= rt_val;
+                `ALU_OP_SRC_PC:     op1 <= pc;
+                default:            op1 <= `ZERO_WORD;
+            endcase
+            case (alu_op2_src)
+                `ALU_OP_SRC_ZERO:   op2 <= `ZERO_WORD;
+                `ALU_OP_SRC_IMM:    op2 <= imm;
+                `ALU_OP_SRC_RS:     op2 <= rs_val;
+                `ALU_OP_SRC_RT:     op2 <= rt_val;
+                `ALU_OP_SRC_PC:     op2 <= pc;
+                default:            op2 <= `ZERO_WORD;
+            endcase
+        end
     end
 
     alu pure_alu_inst(

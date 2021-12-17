@@ -28,7 +28,10 @@ multicycle: $(SIM)/testbench.v $(COMMON_FILES) $(wildcard $(MULTICYCLE)/*.v)
 	iverilog -o $(MULTICYCLE_TARGET)/sim.vvp -I $(INCLUDES) $^
 	cd $(MULTICYCLE_TARGET) && vvp sim.vvp
 
-pipeline:
+pipeline: $(SIM)/testbench.v $(COMMON_FILES) $(wildcard $(PIPELINE)/*.v)
+	mkdir -p $(PIPELINE_TARGET)
+	iverilog -o $(PIPELINE_TARGET)/sim.vvp -I $(INCLUDES) $^
+	cd $(PIPELINE_TARGET) && vvp sim.vvp
 
 clean:
 	rm -rf $(TARGET)

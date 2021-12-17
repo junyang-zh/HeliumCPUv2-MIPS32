@@ -49,6 +49,7 @@ module cpu #(
     pc_with_addr_mux pc_inst(
         .clk(if_clk), .rst(rst),
         .stall(`FALSE),
+        .flush(`FALSE),
         .can_branch(can_branch),
         .branch_take(alu_result[0]),
         .targ_else_offset(targ_else_offset),
@@ -121,6 +122,7 @@ module cpu #(
 
     alu_with_src_mux alu_inst(
         .clk(ex_clk),
+        .stall(`FALSE),
         .alu_op1_src(alu_op1_src), .alu_op2_src(alu_op2_src),
         .rs_val(rs_val), .rt_val(rt_val), .imm(imm), .pc(pc),
         .alu_op(alu_op),

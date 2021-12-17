@@ -20,21 +20,6 @@ module cpu #(
     output wire[W-1:0] s_addr,
 	output wire[W-1:0] s_data
 );
-
-    // Stage counter
-
-    wire if_clk, id_clk, ex_clk, mem_clk, wb_clk;
-    counter counter_inst(
-        .clk(clk), .rst(rst),
-
-        .if_clk(if_clk),
-        .id_clk(id_clk),
-        .ex_clk(ex_clk),
-        .mem_clk(mem_clk),
-        .wb_clk(wb_clk)
-    );
-    assign pc_clk = if_clk, load_clk = mem_clk, store_clk = mem_clk;
-
     // IF stage
 
     // PC ctrls
@@ -42,9 +27,8 @@ module cpu #(
     wire[W-1:0] inst, rs_val, rt_val, rd_val, imm, alu_result;
 
     pc_with_addr_mux pc_inst(
-        .clk(if_clk), .rst(rst),
-        .stall(`FALSE),
-        .flush(`FALSE),
+        .clk(clk), .rst(rst),
+        // TODO: flush, stall
         .can_branch(can_branch),
         .branch_take(alu_result[0]),
         .targ_else_offset(targ_else_offset),
@@ -73,7 +57,7 @@ module cpu #(
     wire[`L_S_MODE_W-1:0] l_s_mode;
 
     decoder decoder_inst(
-        .clk(id_clk), .rst(rst),
+        .clk(clk), .rst(rst),
         .inst(inst),
 
         .rs(rs_addr), .rt(rt_addr),
@@ -101,7 +85,7 @@ module cpu #(
     wire[W-1:0] reg_write_data;
 
     regfile regfile_inst(
-        .clk(wb_clk), .rst(rst),
+        .clk(clk), .rst(rst),
         .rs_en(rs_read_en),
         .rs_addr(rs_addr),
         .rs_data(rs_val),
@@ -114,8 +98,7 @@ module cpu #(
     );
 
     alu_with_src_mux alu_inst(
-        .clk(ex_clk),
-        .stall(`FALSE),
+        .clk(clk),
         .alu_op1_src(alu_op1_src), .alu_op2_src(alu_op2_src),
         .rs_val(rs_val), .rt_val(rt_val), .imm(imm), .pc(pc),
         .alu_op(alu_op),
@@ -127,7 +110,7 @@ module cpu #(
     wire[W-1:0] mem_write_data, mem_read_data;
 
     mem mem_inst(
-        .clk(mem_clk), .rst(rst),
+        .clk(clk), .rst(rst),
 
         .mem_read_en(mem_read_en), .mem_write_en(mem_write_en),
         .mem_addr(alu_result),
