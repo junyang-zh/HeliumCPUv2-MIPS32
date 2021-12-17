@@ -45,6 +45,16 @@ module cpu #(
         .inst(inst)
     );
 
+    // IF-ID stage: stage the pc for branch calculation and debugging
+
+    wire[W-1:0] id_pc;
+
+    ctrl_regs #(W) if_id (
+        .clk(clk), .rst(rst),
+        .ctrl_in(pc),
+        .ctrl_out(id_pc)
+    );
+
     // ID stage
 
     // Decoder to stages
@@ -111,17 +121,23 @@ module cpu #(
     wire[`REG_W_SRC_WIDTH-1:0] ex_reg_write_src;
     wire[`REG_W_DST_WIDTH-1:0] ex_reg_write_dst;
 
-    ctrl_regs #(23) id_ex (
+    wire[W-1:0] ex_pc, ex_imm;
+    wire[`REG_ADDR_W-1:0] ex_rs_addr, ex_rt_addr, ex_rd_addr;
+
+
+    ctrl_regs #(1000) id_ex (
         .clk(clk), .rst(rst),
         .ctrl_in({
             alu_op, alu_op1_src, alu_op2_src,
             mem_read_en, mem_write_en, l_s_mode,
-            reg_write, reg_write_src, reg_write_dst
+            reg_write, reg_write_src, reg_write_dst,
+            id_pc, imm, rs_addr, rt_addr, rd_addr
         }),
         .ctrl_out({
             ex_alu_op, ex_alu_op1_src, ex_alu_op2_src,
             ex_mem_read_en, ex_mem_write_en, ex_l_s_mode,
-            ex_reg_write, ex_reg_write_src, ex_reg_write_dst
+            ex_reg_write, ex_reg_write_src, ex_reg_write_dst,
+            ex_pc, ex_imm, ex_rs_addr, ex_rt_addr, ex_rd_addr
         })
     );
 
@@ -132,7 +148,7 @@ module cpu #(
         // TODO stall
         .stall(`FALSE),
         .alu_op1_src(ex_alu_op1_src), .alu_op2_src(ex_alu_op2_src),
-        .rs_val(rs_val), .rt_val(rt_val), .imm(imm), .pc(pc),
+        .rs_val(rs_val), .rt_val(rt_val), .imm(imm), .pc(pc), // Here imm/pc are not ex_imm/ex_pc
         .alu_op(ex_alu_op),
         .result(alu_result)
     );
@@ -145,15 +161,20 @@ module cpu #(
     wire[`REG_W_SRC_WIDTH-1:0] mem_reg_write_src;
     wire[`REG_W_DST_WIDTH-1:0] mem_reg_write_dst;
 
-    ctrl_regs #(10) ex_mem (
+    wire[W-1:0] mem_pc, mem_imm;
+    wire[`REG_ADDR_W-1:0] mem_rs_addr, mem_rt_addr, mem_rd_addr;
+
+    ctrl_regs #(1000) ex_mem (
         .clk(clk), .rst(rst),
         .ctrl_in({
             ex_mem_read_en, ex_mem_write_en, ex_l_s_mode,
-            ex_reg_write, ex_reg_write_src, ex_reg_write_dst
+            ex_reg_write, ex_reg_write_src, ex_reg_write_dst,
+            ex_pc, ex_imm, ex_rs_addr, ex_rt_addr, ex_rd_addr
         }),
         .ctrl_out({
             mem_mem_read_en, mem_mem_write_en, mem_l_s_mode,
-            mem_reg_write, mem_reg_write_src, mem_reg_write_dst
+            mem_reg_write, mem_reg_write_src, mem_reg_write_dst,
+            mem_pc, mem_imm, mem_rs_addr, mem_rt_addr, mem_rd_addr
         })
     );
 
@@ -183,13 +204,18 @@ module cpu #(
     wire[`REG_W_SRC_WIDTH-1:0] wb_reg_write_src;
     wire[`REG_W_DST_WIDTH-1:0] wb_reg_write_dst;
 
-    ctrl_regs #(5) mem_wb (
+    wire[W-1:0] wb_pc, wb_imm;
+    wire[`REG_ADDR_W-1:0] wb_rs_addr, wb_rt_addr, wb_rd_addr;
+
+    ctrl_regs #(1000) mem_wb (
         .clk(clk), .rst(rst),
         .ctrl_in({
-            mem_reg_write, mem_reg_write_src, mem_reg_write_dst
+            mem_reg_write, mem_reg_write_src, mem_reg_write_dst,
+            mem_pc, mem_imm, mem_rs_addr, mem_rt_addr, mem_rd_addr
         }),
         .ctrl_out({
-            wb_reg_write, wb_reg_write_src, wb_reg_write_dst
+            wb_reg_write, wb_reg_write_src, wb_reg_write_dst,
+            wb_pc, wb_imm, wb_rs_addr, wb_rt_addr, wb_rd_addr
         })
     );
 
@@ -198,8 +224,8 @@ module cpu #(
 
     writeback wb_inst(
         .reg_write(wb_reg_write),
-        .alu_result(alu_result), .mem_data(mem_read_data), .pc(pc), .imm(imm),
-        .rd(rd_addr), .rt(rt_addr),
+        .alu_result(alu_result), .mem_data(mem_read_data), .pc(wb_pc), .imm(wb_imm),
+        .rd(wb_rd_addr), .rt(wb_rt_addr),
         .reg_write_src(wb_reg_write_src),
         .reg_write_dst(wb_reg_write_dst),
 
