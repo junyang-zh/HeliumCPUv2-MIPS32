@@ -212,11 +212,11 @@ module cpu #(
         .idex_rs_reg_read(rs_read_en), .idex_rt_reg_read(rt_read_en),
         .idex_rs_addr(rs_addr), .idex_rt_addr(rt_addr),
 
-        .exmem_reg_write_en(mem_reg_write_en),
+        .exmem_reg_write(mem_reg_write),
         .exmem_reg_write_addr(mem_reg_write_addr),
         .ex_rs_forward(ex_rs_forward), .ex_rt_forward(ex_rt_forward),
 
-        .memwb_reg_write_en(wb_reg_write_en),
+        .memwb_reg_write(wb_reg_write),
         .memwb_reg_write_addr(wb_reg_write_addr),
         .mem_rs_forward(mem_rs_forward), .mem_rt_forward(mem_rt_forward)
     );

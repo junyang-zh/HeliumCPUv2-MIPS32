@@ -6,20 +6,20 @@ module forward_detection (
     input wire idex_rs_reg_read, idex_rt_reg_read,
     input wire[`REG_ADDR_W-1:0] idex_rs_addr, idex_rt_addr,
     // EX-EX forward
-    input wire exmem_reg_write_en,
+    input wire exmem_reg_write,
     input wire[`REG_ADDR_W-1:0] exmem_reg_write_addr,
     output reg ex_rs_forward, ex_rt_forward,
     // MEM-EX forward
-    input wire memwb_reg_write_en,
+    input wire memwb_reg_write,
     input wire[`REG_ADDR_W-1:0] memwb_reg_write_addr,
     output reg mem_rs_forward, mem_rt_forward
 );
     always @(*) begin
-        if (exmem_reg_write_en) begin
+        if (exmem_reg_write) begin
             ex_rs_forward <= (idex_rs_addr != `REG_ZERO && idex_rs_addr == exmem_reg_write_addr);
             ex_rt_forward <= (idex_rs_addr != `REG_ZERO && idex_rt_addr == exmem_reg_write_addr);
         end
-        if (memwb_reg_write_en) begin
+        if (memwb_reg_write) begin
             mem_rs_forward <= (idex_rs_addr != `REG_ZERO && idex_rs_addr == memwb_reg_write_addr);
             mem_rt_forward <= (idex_rs_addr != `REG_ZERO && idex_rt_addr == memwb_reg_write_addr);
         end
