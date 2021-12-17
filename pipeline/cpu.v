@@ -45,22 +45,14 @@ module cpu #(
         .inst(inst)
     );
 
-    // IF-ID stage: stage the pc for branch calculation and debugging
-
-    wire[W-1:0] id_pc;
-
-    ctrl_regs #(W) if_id (
-        .clk(clk), .rst(rst),
-        .ctrl_in(pc),
-        .ctrl_out(id_pc)
-    );
+    // IF-ID interstage: pc is already reg
 
     // ID stage
 
     // Decoder to stages
     wire[`REG_ADDR_W-1:0] rs_addr, rt_addr, rd_addr;
     wire[`WORD_INDEX_W-1:0] shamt;
-    // Control to reg read
+    // Control to reg read, also send to forward ctrl
     wire rs_read_en, rt_read_en;
     // Control to stages
     wire[`ALUOP_WIDTH-1:0] alu_op;
@@ -113,41 +105,25 @@ module cpu #(
 
     // ID-EX interstage
 
-    wire[`ALUOP_WIDTH-1:0] ex_alu_op;
-    wire[`ALU_SRC_WIDTH-1:0] ex_alu_op1_src, ex_alu_op2_src;
-    wire ex_mem_read_en, ex_mem_write_en;
-    wire[`L_S_MODE_W-1:0] ex_l_s_mode;
-    wire ex_reg_write;
-    wire[`REG_W_SRC_WIDTH-1:0] ex_reg_write_src;
-    wire[`REG_ADDR_W-1:0] ex_reg_write_addr;
-
-    wire[W-1:0] ex_pc, ex_imm, ex_rs_val, ex_rt_val;
+    wire[W-1:0] ex_pc;
 
     ctrl_regs #(1000) id_ex (
         .clk(clk), .rst(rst),
-        .ctrl_in({
-            alu_op, alu_op1_src, alu_op2_src,
-            mem_read_en, mem_write_en, l_s_mode,
-            reg_write, reg_write_src, reg_write_addr,
-            id_pc, imm, rs_val, rt_val
-        }),
-        .ctrl_out({
-            ex_alu_op, ex_alu_op1_src, ex_alu_op2_src,
-            ex_mem_read_en, ex_mem_write_en, ex_l_s_mode,
-            ex_reg_write, ex_reg_write_src, ex_reg_write_addr,
-            ex_pc, ex_imm, ex_rs_val, ex_rt_val
-        })
+        .ctrl_in(pc),
+        .ctrl_out(ex_pc)
     );
 
     // EX stage
+
+    wire[W-1:0] rs_forward_val, rt_forward_val;
 
     alu_with_src_mux alu_inst(
         .clk(clk),
         // TODO stall
         .stall(`FALSE),
-        .alu_op1_src(ex_alu_op1_src), .alu_op2_src(ex_alu_op2_src),
-        .rs_val(ex_rs_val), .rt_val(ex_rt_val), .imm(ex_imm), .pc(ex_pc),
-        .alu_op(ex_alu_op),
+        .alu_op1_src(alu_op1_src), .alu_op2_src(alu_op2_src),
+        .rs_val(rs_forward_val), .rt_val(rt_forward_val), .imm(imm), .pc(ex_pc),
+        .alu_op(alu_op),
         .result(alu_result)
     );
 
@@ -159,19 +135,19 @@ module cpu #(
     wire[`REG_W_SRC_WIDTH-1:0] mem_reg_write_src;
     wire[`REG_ADDR_W-1:0] mem_reg_write_addr;
 
-    wire[W-1:0] mem_pc, mem_imm, mem_rt_val;
+    wire[W-1:0] mem_pc, mem_imm, mem_rt_val, mem_alu_result;
 
     ctrl_regs #(1000) ex_mem (
         .clk(clk), .rst(rst),
         .ctrl_in({
-            ex_mem_read_en, ex_mem_write_en, ex_l_s_mode,
-            ex_reg_write, ex_reg_write_src, ex_reg_write_addr,
-            ex_pc, ex_imm, ex_rt_val
+            mem_read_en, mem_write_en, l_s_mode,
+            reg_write, reg_write_src, reg_write_addr,
+            ex_pc, imm, rt_val, alu_result
         }),
         .ctrl_out({
             mem_mem_read_en, mem_mem_write_en, mem_l_s_mode,
             mem_reg_write, mem_reg_write_src, mem_reg_write_addr,
-            mem_pc, mem_imm, mem_rt_val
+            mem_pc, mem_imm, mem_rt_val, mem_alu_result
         })
     );
 
@@ -183,7 +159,7 @@ module cpu #(
         .clk(clk), .rst(rst),
 
         .mem_read_en(mem_mem_read_en), .mem_write_en(mem_mem_write_en),
-        .mem_addr(alu_result),
+        .mem_addr(mem_alu_result),
         .l_s_mode(mem_l_s_mode),
         .mem_write_data(mem_rt_val), .mem_read_data(mem_read_data),
 
@@ -201,17 +177,18 @@ module cpu #(
     wire[`REG_W_SRC_WIDTH-1:0] wb_reg_write_src;
     // Connected at id: wire[`REG_ADDR_W-1:0] wb_reg_write_addr;
 
-    wire[W-1:0] wb_pc, wb_imm;
+    // mem_read_data is already reg
+    wire[W-1:0] wb_pc, wb_imm, wb_alu_result;
 
     ctrl_regs #(1000) mem_wb (
         .clk(clk), .rst(rst),
         .ctrl_in({
             mem_reg_write, mem_reg_write_src, mem_reg_write_addr,
-            mem_pc, mem_imm
+            mem_pc, mem_imm, mem_alu_result
         }),
         .ctrl_out({
             wb_reg_write, wb_reg_write_src, wb_reg_write_addr,
-            wb_pc, wb_imm
+            wb_pc, wb_imm, wb_alu_result
         })
     );
 
@@ -220,11 +197,49 @@ module cpu #(
 
     writeback wb_inst(
         .reg_write(wb_reg_write),
-        .alu_result(alu_result), .mem_data(mem_read_data), .pc(wb_pc), .imm(wb_imm),
+        .alu_result(wb_alu_result), .mem_data(mem_read_data), .pc(wb_pc), .imm(wb_imm),
         .reg_write_src(wb_reg_write_src),
 
         .write_en(reg_write_en),
         .reg_write_data(reg_write_data)
+    );
+
+    // Forward and mem-ex hazard detection
+
+    wire ex_rs_forward, ex_rt_forward, mem_rs_forward, mem_rt_forward;
+
+    forward_detection forward_detection_inst(
+        .idex_rs_reg_read(rs_read_en), .idex_rt_reg_read(rt_read_en),
+        .idex_rs_addr(rs_addr), .idex_rt_addr(rt_addr),
+
+        .exmem_reg_write_en(mem_reg_write_en),
+        .exmem_reg_write_addr(mem_reg_write_addr),
+        .ex_rs_forward(ex_rs_forward), .ex_rt_forward(ex_rt_forward),
+
+        .memwb_reg_write_en(wb_reg_write_en),
+        .memwb_reg_write_addr(wb_reg_write_addr),
+        .mem_rs_forward(mem_rs_forward), .mem_rt_forward(mem_rt_forward)
+    );
+
+    // Actually ex stage
+
+    wire mem_ex_hazard;
+
+    alu_forward_mux alu_forward_mux_inst(
+        // rs_val, rt_val are already id-ex stage reg, so no ex_rt_val
+        .rs_val(rs_val), .rt_val(rt_val),
+
+        .mem_alu_result(mem_alu_result), .mem_pc(mem_pc), .mem_imm(mem_imm),
+        .mem_reg_write_src(mem_reg_write_src),
+
+        .wb_alu_result(wb_alu_result), .mem_read_data(mem_read_data), .wb_pc(wb_pc), .wb_imm(wb_imm),
+        .wb_reg_write_src(wb_reg_write_src),
+
+        .ex_rs_forward(ex_rs_forward), .ex_rt_forward(ex_rt_forward),
+        .mem_rs_forward(mem_rs_forward), .mem_rt_forward(mem_rt_forward),
+
+        .rs_forward_val(rs_forward_val), .rt_forward_val(rt_forward_val),
+        .mem_ex_hazard(mem_ex_hazard)
     );
     
 endmodule
