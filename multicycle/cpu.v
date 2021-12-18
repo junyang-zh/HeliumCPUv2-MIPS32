@@ -43,14 +43,13 @@ module cpu #(
     // IF stage
 
     // PC ctrls
-    wire can_branch, targ_else_offset, pc_addr_src_reg;
+    wire can_branchm, jump, targ_else_offset, pc_addr_src_reg;
     wire[W-1:0] inst, rs_val, rt_val, rd_val, imm, alu_result;
 
     pc_with_addr_mux pc_inst(
         .clk(if_clk), .rst(rst),
-        .stall(`FALSE),
-        .flush(`FALSE),
         .can_branch(can_branch),
+        .jump(jump),
         .branch_take(alu_result[0]),
         .targ_else_offset(targ_else_offset),
 
@@ -93,6 +92,7 @@ module cpu #(
         .alu_op1_src(alu_op1_src),
         .alu_op2_src(alu_op2_src),
         .can_branch(can_branch),
+        .jump(jump),
         .targ_else_offset(targ_else_offset),
         .pc_addr_src_reg(pc_addr_src_reg),
         .rs_read_en(rs_read_en), .rt_read_en(rt_read_en), .reg_write(reg_write),

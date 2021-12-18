@@ -6,10 +6,9 @@ module pc_with_addr_mux #(
     parameter W = `WORD_WIDTH
 ) (
     input wire clk, rst,
-    input wire stall,           // Pipeline: for jumps, can't obtain addr, stall
-    input wire flush,           // Flush signal for pipelines
 
     input wire can_branch,      // if the inst can branch
+    input wire jump,            // if the inst must jump
     input wire targ_else_offset,// if the addr is target, true, else offset
     input wire branch_take,     // if the result is take
 
@@ -21,18 +20,14 @@ module pc_with_addr_mux #(
     input wire[W-1:0] read_inst,
     output reg[W-1:0] inst
 );
-    wire[W-1:0] pc_targ_addr;
-    assign pc_targ_addr = (pc_addr_src_reg ? rs_val : imm);
+    wire[W-1:0] pc_targ_addr = (pc_addr_src_reg ? rs_val : imm);
     // posedge pc
     always @(posedge clk) begin
         if (rst) begin
             pc <= `ZERO_WORD;
         end
-        else if (stall) begin
-            pc <= pc;
-        end
         else begin
-            pc <=   (flush || (can_branch && branch_take)) ?
+            pc <=   (jump || (can_branch && branch_take)) ?
                     (targ_else_offset ? pc_targ_addr : (pc + pc_targ_addr + 4)) :
                     pc + 4;
         end

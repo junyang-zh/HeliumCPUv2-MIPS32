@@ -80,9 +80,11 @@ module alu_with_src_mux #(
     output wire[W-1:0] result
 );
     reg[W-1:0] op1, op2;
+    reg[`ALUOP_WIDTH-1:0] reg_alu_op;
     
     always @(posedge clk) begin // MUX
         if (!stall) begin
+            reg_alu_op <= alu_op;
             case (alu_op1_src)
                 `ALU_OP_SRC_ZERO:   op1 <= `ZERO_WORD;
                 `ALU_OP_SRC_IMM:    op1 <= imm;
@@ -105,7 +107,7 @@ module alu_with_src_mux #(
     alu pure_alu_inst(
         .op1(op1),
         .op2(op2),
-        .alu_op(alu_op),
+        .alu_op(reg_alu_op),
         .result(result)
     );
 endmodule

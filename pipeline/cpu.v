@@ -22,25 +22,16 @@ module cpu #(
     // IF stage
 
     // PC ctrls
-    wire can_branch, targ_else_offset, pc_addr_src_reg;
     // Connect ID backward signals
-    wire[W-1:0] inst, rs_val, rt_val, rd_val, imm;
     // Connect EX backward signals
-    wire[W-1:0] alu_result;
 
-    wire pc_stall;
+    wire pc_stall, pc_flush;
+    wire[W-1:0] flush_addr;
 
-    pc_with_addr_mux pc_inst(
+    pc_assume_not_take pc_inst(
         .clk(clk), .rst(rst),
-        // TODO: flush, stall
-        .flush(`FALSE), .stall(pc_stall),
-        .can_branch(can_branch),
-        .branch_take(alu_result[0]),
-        .targ_else_offset(targ_else_offset),
-
-        .pc_addr_src_reg(pc_addr_src_reg),
-        .rs_val(rs_val),
-        .imm(imm),
+        .flush(pc_flush), .stall(pc_stall),
+        .flush_addr(flush_addr),
 
         .pc(pc),
         .read_inst(read_inst),
@@ -51,12 +42,14 @@ module cpu #(
 
     // ID stage
 
-    // Decoder to stages
+    // Decoder/reg read to stages
+    wire[W-1:0] inst, rs_val, rt_val, rd_val, imm;
     wire[`REG_ADDR_W-1:0] rs_addr, rt_addr, rd_addr;
     wire[`WORD_INDEX_W-1:0] shamt;
     // Control to reg read, also send to forward ctrl
     wire rs_read_en, rt_read_en;
     // Control to stages
+    wire can_branch, jump, targ_else_offset, pc_addr_src_reg;
     wire[`ALUOP_WIDTH-1:0] alu_op;
     wire[`ALU_SRC_WIDTH-1:0] alu_op1_src, alu_op2_src;
     wire reg_write;
@@ -84,6 +77,7 @@ module cpu #(
         .alu_op1_src(alu_op1_src),
         .alu_op2_src(alu_op2_src),
         .can_branch(can_branch),
+        .jump(jump),
         .targ_else_offset(targ_else_offset),
         .pc_addr_src_reg(pc_addr_src_reg),
         .rs_read_en(rs_read_en), .rt_read_en(rt_read_en), .reg_write(reg_write),
@@ -125,6 +119,7 @@ module cpu #(
     // EX stage
 
     wire[W-1:0] rs_forward_val, rt_forward_val;
+    wire[W-1:0] alu_result;
 
     alu_with_src_mux alu_inst(
         .clk(clk),
@@ -138,26 +133,31 @@ module cpu #(
 
     // EX-MEM interstage
 
+    // PC controls
+    wire mem_can_branch, mem_targ_else_offset, mem_pc_addr_src_reg;
+    // Mem/reg controls
     wire mem_mem_read_en, mem_mem_write_en;
     wire[`L_S_MODE_W-1:0] mem_l_s_mode;
     wire mem_reg_write;
     wire[`REG_W_SRC_WIDTH-1:0] mem_reg_write_src;
     wire[`REG_ADDR_W-1:0] mem_reg_write_addr;
 
-    wire[W-1:0] mem_pc, mem_imm, mem_rt_val, mem_alu_result;
+    wire[W-1:0] mem_pc, mem_imm, mem_rt_val; // alu_result is already reg
 
     ctrl_regs #(1000) ex_mem (
         .clk(clk), .rst(rst),
         .stall(`FALSE), .bubble(`FALSE), // Keep going
         .ctrl_in({
+            can_branch, targ_else_offset, pc_addr_src_reg,
             mem_read_en, mem_write_en, l_s_mode,
             reg_write, reg_write_src, reg_write_addr,
-            ex_pc, imm, rt_val, alu_result
+            ex_pc, imm, rt_val
         }),
         .ctrl_out({
+            mem_can_branch, mem_targ_else_offset, mem_pc_addr_src_reg,
             mem_mem_read_en, mem_mem_write_en, mem_l_s_mode,
             mem_reg_write, mem_reg_write_src, mem_reg_write_addr,
-            mem_pc, mem_imm, mem_rt_val, mem_alu_result
+            mem_pc, mem_imm, mem_rt_val
         })
     );
 
@@ -169,7 +169,7 @@ module cpu #(
         .clk(clk), .rst(rst),
 
         .mem_read_en(mem_mem_read_en), .mem_write_en(mem_mem_write_en),
-        .mem_addr(mem_alu_result),
+        .mem_addr(alu_result),
         .l_s_mode(mem_l_s_mode),
         .mem_write_data(mem_rt_val), .mem_read_data(mem_read_data),
 
@@ -195,7 +195,7 @@ module cpu #(
         .stall(`FALSE), .bubble(`FALSE), // Keep going
         .ctrl_in({
             mem_reg_write, mem_reg_write_src, mem_reg_write_addr,
-            mem_pc, mem_imm, mem_alu_result
+            mem_pc, mem_imm, alu_result
         }),
         .ctrl_out({
             wb_reg_write, wb_reg_write_src, wb_reg_write_addr,
@@ -240,7 +240,7 @@ module cpu #(
         // rs_val, rt_val are already id-ex stage reg, so no ex_rt_val
         .rs_val(rs_val), .rt_val(rt_val),
 
-        .mem_alu_result(mem_alu_result), .mem_pc(mem_pc), .mem_imm(mem_imm),
+        .mem_alu_result(alu_result), .mem_pc(mem_pc), .mem_imm(mem_imm),
         .mem_reg_write_src(mem_reg_write_src),
 
         .wb_alu_result(wb_alu_result), .mem_read_data(mem_read_data), .wb_pc(wb_pc), .wb_imm(wb_imm),
@@ -255,12 +255,40 @@ module cpu #(
 
     // Hazard dealing
 
+    wire j_ctrl_hazard, branch_ctrl_hazard;
+
     hazard hazard_inst(
         .rst(rst),
         .mem_ex_hazard(mem_ex_hazard),
         .pc_stall(pc_stall),
+        .pc_flush(pc_flush),
         .id_stall(id_stall),
         .id_ex_bubble(id_ex_bubble)
     );
+
+    ctrl_hazard_detect_assume_not_take ctrl_hazard_inst(
+        .exmem_can_branch(mem_can_branch),
+        .exmem_branch_take(alu_result[0]),
+        .idex_jump(jump),
+        .j_ctrl_hazard(j_ctrl_hazard),
+        .branch_ctrl_hazard(branch_ctrl_hazard)
+    );
     
+    flush_addr_gen flush_addr_gen_inst(
+        .j_ctrl_hazard(j_ctrl_hazard),
+        .branch_ctrl_hazard(branch_ctrl_hazard),
+
+        .idex_pc(ex_pc), .exmem_pc(mem_pc),
+        .idex_targ_else_offset(targ_else_offset), .exmem_targ_else_offset(mem_targ_else_offset),
+
+        .idex_pc_addr_src_reg(pc_addr_src_reg),
+        .idex_rs_val(rs_val),
+        .idex_imm(imm),
+        
+        .exmem_pc_addr_src_reg(mem_pc_addr_src_reg),
+        .exmem_rs_val(mem_rs_val),
+        .exmem_imm(mem_imm),
+
+        .flush_addr(flush_addr)
+    );
 endmodule

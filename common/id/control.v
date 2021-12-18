@@ -15,6 +15,7 @@ module control (
     output reg[`ALU_SRC_WIDTH-1:0] alu_op2_src, // op1 src: imm, rs, rt
     // PC control
     output reg can_branch,      // if the inst can branch
+    output reg jump,            // if the inst must jump
     output reg targ_else_offset,// if the addr is target, else offset
     output reg pc_addr_src_reg, // if the addr is from regfile, else imm
     // REG control
@@ -29,6 +30,7 @@ module control (
         // Respond to rst/bubble, set important controls invalid
         if (rst || bubble) begin
             can_branch = `FALSE;
+            jump = `FALSE;
             targ_else_offset = `FALSE;
             pc_addr_src_reg = `FALSE;
             rs_read_en = `FALSE;
@@ -178,11 +180,13 @@ module control (
                     case (funct)
                         `JALR, `JR: begin
                             can_branch = `TRUE;
+                            jump = `FALSE;
                             targ_else_offset = `TRUE; // TARGET
                             pc_addr_src_reg = `TRUE; // REG
                         end
                         default: begin // Others don't mess up control flow
                             can_branch = `FALSE;
+                            jump = `FALSE;
                             // Other signals (shall be) masked
                         end
                     endcase
@@ -191,14 +195,19 @@ module control (
                     case (op_code)
                         `BEQ, `BNE, `BLEZ, `BGTZ, `BGEZ_BLTZ: begin
                             can_branch = `TRUE;
+                            jump = `FALSE;
                             targ_else_offset = `FALSE; // OFFSET
                             pc_addr_src_reg = `FALSE; // IMM
                         end
-                        default: can_branch = `FALSE;
+                        default: begin
+                            jump = `FALSE;
+                            can_branch = `FALSE;
+                        end
                     endcase
                 end
                 `J_TYPE: begin // `J, `JAL
                     can_branch = `TRUE;
+                    jump = `TRUE;
                     targ_else_offset = `TRUE; // TARGET
                     pc_addr_src_reg = `FALSE; // IMM
                 end

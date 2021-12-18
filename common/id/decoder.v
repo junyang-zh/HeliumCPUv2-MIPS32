@@ -26,6 +26,7 @@ module decoder #(
     output wire[`ALU_SRC_WIDTH-1:0] alu_op1_src,
     output wire[`ALU_SRC_WIDTH-1:0] alu_op2_src,
     output wire can_branch,
+    output wire jump,
     output wire targ_else_offset,
     output wire pc_addr_src_reg,
     output wire rs_read_en, rt_read_en, reg_write,
@@ -107,6 +108,7 @@ module decoder #(
         .alu_op2_src(alu_op2_src),
         
         .can_branch(can_branch),
+        .jump(jump),
         .targ_else_offset(targ_else_offset),
         .pc_addr_src_reg(pc_addr_src_reg),
 
