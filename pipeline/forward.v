@@ -16,12 +16,12 @@ module forward_detection (
 );
     always @(*) begin
         if (exmem_reg_write) begin
-            ex_rs_forward <= (idex_rs_addr != `REG_ZERO && idex_rs_addr == exmem_reg_write_addr);
-            ex_rt_forward <= (idex_rs_addr != `REG_ZERO && idex_rt_addr == exmem_reg_write_addr);
+            ex_rs_forward = (idex_rs_addr != `REG_ZERO && idex_rs_addr == exmem_reg_write_addr);
+            ex_rt_forward = (idex_rs_addr != `REG_ZERO && idex_rt_addr == exmem_reg_write_addr);
         end
         if (memwb_reg_write) begin
-            mem_rs_forward <= (idex_rs_addr != `REG_ZERO && idex_rs_addr == memwb_reg_write_addr);
-            mem_rt_forward <= (idex_rs_addr != `REG_ZERO && idex_rt_addr == memwb_reg_write_addr);
+            mem_rs_forward = (idex_rs_addr != `REG_ZERO && idex_rs_addr == memwb_reg_write_addr);
+            mem_rt_forward = (idex_rs_addr != `REG_ZERO && idex_rt_addr == memwb_reg_write_addr);
         end
     end
 endmodule
@@ -70,15 +70,13 @@ module alu_forward_mux #(
             default: mem_reg_write_data = `ZERO_WORD;
         endcase
 
+        // Hazard if want forward but couldn't
+        mem_ex_hazard = (ex_src_mem_flag && (ex_rs_forward || ex_rt_forward));
+
         // Forward latest policy
         // RS
         if (ex_rs_forward) begin
-            if (ex_src_mem_flag) begin // Hazard!
-                mem_ex_hazard = `TRUE;
-            end
-            else begin
-                rs_forward_val = ex_reg_write_data;
-            end
+            rs_forward_val = ex_reg_write_data;
         end
         else if (mem_rs_forward) begin
             rs_forward_val = mem_reg_write_data;
@@ -88,12 +86,7 @@ module alu_forward_mux #(
         end
         // RT
         if (ex_rt_forward) begin
-            if (ex_src_mem_flag) begin // Hazard!
-                mem_ex_hazard = `TRUE;
-            end
-            else begin
-                rt_forward_val = ex_reg_write_data;
-            end
+            rt_forward_val = ex_reg_write_data;
         end
         else if (mem_rt_forward) begin
             rt_forward_val = mem_reg_write_data;

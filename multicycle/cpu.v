@@ -79,6 +79,7 @@ module cpu #(
 
     decoder decoder_inst(
         .clk(id_clk), .rst(rst),
+        .stall(`FALSE), .bubble(`FALSE),
         .inst(inst),
 
         .op_code(op_code), .funct(funct),

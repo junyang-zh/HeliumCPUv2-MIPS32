@@ -74,6 +74,7 @@ module cpu #(
 
     decoder decoder_inst(
         .clk(id_clk), .rst(rst),
+        .stall(`FALSE), .bubble(`FALSE),
         .inst(inst),
 
         .rs(rs_addr), .rt(rt_addr),

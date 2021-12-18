@@ -26,19 +26,19 @@ module pc_with_addr_mux #(
     // posedge pc
     always @(posedge clk) begin
         if (rst) begin
-            pc = `ZERO_WORD;
+            pc <= `ZERO_WORD;
         end
         else if (stall) begin
-            pc = pc;
+            pc <= pc;
         end
         else begin
-            pc =    (flush || (can_branch && branch_take)) ?
+            pc <=   (flush || (can_branch && branch_take)) ?
                     (targ_else_offset ? pc_targ_addr : (pc + pc_targ_addr + 4)) :
                     pc + 4;
         end
     end
     // negedge fetch
     always @(negedge clk) begin
-        inst = read_inst;
+        inst <= read_inst;
     end
 endmodule

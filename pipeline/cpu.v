@@ -28,10 +28,12 @@ module cpu #(
     // Connect EX backward signals
     wire[W-1:0] alu_result;
 
+    wire pc_stall;
+
     pc_with_addr_mux pc_inst(
         .clk(clk), .rst(rst),
         // TODO: flush, stall
-        .flush(`FALSE), .stall(`FALSE),
+        .flush(`FALSE), .stall(pc_stall),
         .can_branch(can_branch),
         .branch_take(alu_result[0]),
         .targ_else_offset(targ_else_offset),
@@ -63,8 +65,14 @@ module cpu #(
     wire mem_read_en, mem_write_en;
     wire[`L_S_MODE_W-1:0] l_s_mode;
 
+    // Id stage stall (save power)
+    wire id_stall;
+    // Bubble: interstage regs bubble
+    wire id_ex_bubble;
+
     decoder decoder_inst(
         .clk(clk), .rst(rst),
+        .stall(id_stall), .bubble(id_ex_bubble),
         .inst(inst),
 
         .rs(rs_addr), .rt(rt_addr),
@@ -109,6 +117,7 @@ module cpu #(
 
     ctrl_regs #(1000) id_ex (
         .clk(clk), .rst(rst),
+        .stall(`FALSE), .bubble(id_ex_bubble),
         .ctrl_in(pc),
         .ctrl_out(ex_pc)
     );
@@ -139,6 +148,7 @@ module cpu #(
 
     ctrl_regs #(1000) ex_mem (
         .clk(clk), .rst(rst),
+        .stall(`FALSE), .bubble(`FALSE), // Keep going
         .ctrl_in({
             mem_read_en, mem_write_en, l_s_mode,
             reg_write, reg_write_src, reg_write_addr,
@@ -182,6 +192,7 @@ module cpu #(
 
     ctrl_regs #(1000) mem_wb (
         .clk(clk), .rst(rst),
+        .stall(`FALSE), .bubble(`FALSE), // Keep going
         .ctrl_in({
             mem_reg_write, mem_reg_write_src, mem_reg_write_addr,
             mem_pc, mem_imm, mem_alu_result
@@ -240,6 +251,16 @@ module cpu #(
 
         .rs_forward_val(rs_forward_val), .rt_forward_val(rt_forward_val),
         .mem_ex_hazard(mem_ex_hazard)
+    );
+
+    // Hazard dealing
+
+    hazard hazard_inst(
+        .rst(rst),
+        .mem_ex_hazard(mem_ex_hazard),
+        .pc_stall(pc_stall),
+        .id_stall(id_stall),
+        .id_ex_bubble(id_ex_bubble)
     );
     
 endmodule

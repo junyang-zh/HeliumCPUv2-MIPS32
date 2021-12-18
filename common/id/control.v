@@ -3,7 +3,7 @@
 `include "defines.v"
 
 module control (
-    input wire rst,
+    input wire rst, bubble,
 
     input wire[`OP_WIDTH-1:0] op_code,
     input wire[`FUNCT_WIDTH-1:0] funct,
@@ -26,8 +26,8 @@ module control (
     output reg[`L_S_MODE_W-1:0] l_s_mode        // word, halfword or byte
 );
     always @(*) begin
-        // Respond to rst, set important controls invalid
-        if (rst) begin
+        // Respond to rst/bubble, set important controls invalid
+        if (rst || bubble) begin
             can_branch = `FALSE;
             targ_else_offset = `FALSE;
             pc_addr_src_reg = `FALSE;
