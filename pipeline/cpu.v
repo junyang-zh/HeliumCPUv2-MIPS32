@@ -260,6 +260,8 @@ module cpu #(
     hazard hazard_inst(
         .rst(rst),
         .mem_ex_hazard(mem_ex_hazard),
+        .j_ctrl_hazard(j_ctrl_hazard),
+        .branch_ctrl_hazard(branch_ctrl_hazard),
         .pc_stall(pc_stall),
         .pc_flush(pc_flush),
         .id_stall(id_stall),
