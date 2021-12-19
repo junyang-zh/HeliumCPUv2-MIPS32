@@ -1,10 +1,10 @@
 # MIPSLAB
 
-Computer orgnization courseworks in XJTU.
+Extension of computer orgnization courseworks in XJTU; implementing some CPUs, all providing a 42 instructions subset of MIPS ISA.
 
 By Junyang Zhang.
 
-## Simulation
+## How to run
 
 The project has a testbench also written in Verilog HDL, thus using any simulator other than [Verilator](https://www.veripool.org/verilator/) would be suffice. It is recommended to use [Icarus Verilog](http://iverilog.icarus.com/) as a simulator, and other platforms such as [Modelsim](https://eda.sw.siemens.com/en-US/ic/modelsim/), [Vivado](https://china.xilinx.com/products/design-tools/vivado.html), [Quartus](https://www.intel.com/content/www/us/en/software/programmable/quartus-prime/download.html) are yet to be tested.
 
@@ -53,10 +53,40 @@ Some handy assembly programs are given in `sim/MIPS_sample_src`.
 
 The projects now includes four CPU implementation with different architectures, have a quick look to see what will happen.
 
-### Single Cycle CPU
+### Single Cycle Version
 
 The single cycle version is the basis of all variants, which consists of all necessary components. The datapath is illustrated below.
 
 ![SingleCycleDataPath.drawio](assets/SingleCycleDataPath.drawio.png)
 
 As you can see, the diagram is splitted into 5 stages, which will run in turns by each clock signal. On every positive edge of the clock signal, there would be exactly one stage that is active. This counting is implemented by a counter in `common/single_cycle/counter.v`, which sends out 5 different sub-clock signals.
+
+![SingleCycleCounter.png](assets/SingleCycleCounter.png)
+
+### Multicycle Version
+
+The multicycle version is just a small improvement of the single cycle version, which instead of asking every stage to run sequentially, skips some or all stages after decoding. This method requires to tailor the stage footprint for every instructions. Fortunately, the types are not too much, since all instructions need "IF" and "ID" stages.
+
+For example, the instruction "LUI" only needs "IF", "ID" and "WB", since the immediate is generated in the "ID" stage; and "ADD" need "IF", "ID", "EX" and "WB", skipping memory accesses.
+
+So, the only modification is about the counter. The counter now need to have `op_code` from "ID" stage, and decide which stages shall be run, and send sub-clocks.
+
+![MulticycleCounter](assets/MulticycleCounter.png)
+
+One can see that, it does a non-trivial speedup by adding some trivial work.
+
+In the multicycle version, I implemented a unified memory (both the instruction memory and data memory), for the sake of coursework requirements.
+
+### Pipeline Version
+
+Let the instructions flow!
+
+#### Assume not take
+
+Finished but lazy to document.
+
+![PipelineHazards](assets/PipelineHazards.png)
+
+#### 2-bit Branch Prediction and Branch Target Buffer
+
+Not finished yet.
