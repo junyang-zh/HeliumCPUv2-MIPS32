@@ -79,11 +79,31 @@ In the multicycle version, I implemented a unified memory (both the instruction 
 
 ### Pipeline Version
 
-Let the instructions flow!
+The multicycle version is good, though, but take a further step, how can we utilize every stage at a given moment? So we let the instructions flow trough the stages like a pipeline, making following modifications to the datapath.
+
+![PipelineDataPath.drawio](assets/PipelineDataPath.drawio.png)
+
+We can see that every stage will be active at any clock period, and the results of each stage will be hold in registers for the next stage; but it won't work well in most situations, because:
+
+- Some instructions will not get the propriate data, which is the result of the previous instruction, e.g. `lui $0, 0`, followed by `andi $0, 123`;
+- Some instructions will not get the propriate data, which is the result of the previous load, e.g. `lw $0, 0($1)`, followed by `addi $0, -1`;
+- The program counter will proceed indefinitely, and won't branch or jump.
+
+We shall solve the first two problems together first, and produce codes for forwarding and hazard.
+
+![PipelineDataHazard.drawio](assets/PipelineDataHazard.drawio.png)
+
+Here I ignored the instruction memory and the data memory for simplicity. The `forward` module is added to forward the results and values from "EX/MEM" and "MEM/WB" stage to the "EX" stage, solving the first problem.
+
+Also, the `data_hazard` module integrated into the `forward` module would identify the second problem, and send the hazard signal to the `hazard_dealing` module, which will accordingly stall the stages and add bubbles.
 
 #### Assume not take
 
-Finished but lazy to document.
+Then, let's solve the final problem: jumps and branches. The signal of jumping will not appear until the "ID/EX" stage, and the branch taking will not appear until the "EX/MEM" stage. Thus the `ctrl_hazard` module should identify them, and generate the flush address.
+
+![PipelineCtrlHazard.drawio](assets/PipelineCtrlHazard.drawio.png)
+
+While the `pc` module still fetches instructions every cycle, and assuming the branches and jumps are not taken. This is why the stages must be flushed if jump or taken branches occur.
 
 ![PipelineHazards](assets/PipelineHazards.png)
 
