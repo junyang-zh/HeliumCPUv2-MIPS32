@@ -71,7 +71,7 @@ module pc_with_bp_btb #(
         predict_addr <= btb[pc[BTB_W+1:2]];
     end
 
-    // posedge pc
+    // Posedge pc update
     always @(posedge clk) begin
         if (rst) begin
             pc <= `ZERO_WORD;
@@ -90,7 +90,7 @@ module pc_with_bp_btb #(
             pc <= pc + 4;
         end
     end
-    // negedge fetch
+    // Negedge fetch
     always @(negedge clk) begin
         inst <= read_inst;
     end

@@ -123,11 +123,14 @@ module cpu #(
 
     wire[W-1:0] ex_pc;
 
-    ctrl_regs #(32) id_ex (
+    wire ex_predict_j_taken;
+    wire[W-1:0] ex_predict_addr;
+
+    ctrl_regs #(1000) id_ex (
         .clk(clk), .rst(rst),
         .stall(`FALSE), .bubble(id_ex_bubble),
-        .ctrl_in(pc),
-        .ctrl_out(ex_pc)
+        .ctrl_in({ pc, predict_j_taken, predict_addr }),
+        .ctrl_out({ ex_pc, ex_predict_j_taken, ex_predict_addr })
     );
 
     // EX stage
@@ -158,20 +161,25 @@ module cpu #(
 
     wire[W-1:0] mem_pc, mem_imm, mem_rs_val, mem_rt_val; // alu_result is already reg
 
-    ctrl_regs #(144) ex_mem (
+    wire mem_predict_j_taken;
+    wire[W-1:0] mem_predict_addr;
+
+    ctrl_regs #(1000) ex_mem (
         .clk(clk), .rst(rst),
         .stall(`FALSE), .bubble(`FALSE), // Keep going
         .ctrl_in({
             can_branch, targ_else_offset, pc_addr_src_reg,
             mem_read_en, mem_write_en, l_s_mode,
             reg_write, reg_write_src, reg_write_addr,
-            ex_pc, imm, rs_val, rt_val
+            ex_pc, imm, rs_val, rt_val,
+            ex_predict_j_taken, ex_predict_addr
         }),
         .ctrl_out({
             mem_can_branch, mem_targ_else_offset, mem_pc_addr_src_reg,
             mem_mem_read_en, mem_mem_write_en, mem_l_s_mode,
             mem_reg_write, mem_reg_write_src, mem_reg_write_addr,
-            mem_pc, mem_imm, mem_rs_val, mem_rt_val
+            mem_pc, mem_imm, mem_rs_val, mem_rt_val,
+            mem_predict_j_taken, mem_predict_addr
         })
     );
 
@@ -282,17 +290,15 @@ module cpu #(
         .id_ex_bubble(id_ex_bubble)
     );
 
-    ctrl_hazard_detect_assume_not_take ctrl_hazard_inst(
+    ctrl_hazard_detect ctrl_hazard_inst(
         .exmem_can_branch(mem_can_branch),
         .exmem_branch_take(alu_result[0]),
         .idex_jump(jump),
         .j_ctrl_hazard(j_ctrl_hazard),
-        .branch_ctrl_hazard(branch_ctrl_hazard)
-    );
-    
-    flush_addr_gen flush_addr_gen_inst(
-        .j_ctrl_hazard(j_ctrl_hazard),
         .branch_ctrl_hazard(branch_ctrl_hazard),
+
+        .predict_j_taken(mem_predict_j_taken),
+        .predict_addr(mem_predict_addr),
 
         .idex_pc(ex_pc), .exmem_pc(mem_pc),
         .idex_targ_else_offset(targ_else_offset), .exmem_targ_else_offset(mem_targ_else_offset),
@@ -305,6 +311,9 @@ module cpu #(
         .exmem_rs_val(mem_rs_val),
         .exmem_imm(mem_imm),
 
-        .flush_addr(flush_addr)
+        .flush_addr(flush_addr),
+        .upd(upd),
+        .add_else_minus(add_else_minus),
+        .upd_src_pc(upd_src_pc)
     );
 endmodule
