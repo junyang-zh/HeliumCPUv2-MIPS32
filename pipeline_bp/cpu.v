@@ -28,10 +28,24 @@ module cpu #(
     wire pc_stall, pc_flush;
     wire[W-1:0] flush_addr;
 
-    pc_assume_not_take pc_inst(
+    wire upd;
+    wire add_else_minus;
+    wire[W-1:0] upd_src_pc;
+
+    wire predict_j_taken;
+    wire[W-1:0] predict_addr;
+
+    pc_with_bp_btb pc_inst(
         .clk(clk), .rst(rst),
         .flush(pc_flush), .stall(pc_stall),
         .flush_addr(flush_addr),
+        
+        .upd(`FALSE),
+        .add_else_minus(`FALSE),
+        .upd_src_pc(`ZERO_WORD),
+
+        .predict_j_taken(predict_j_taken),
+        .predict_addr(predict_addr),
 
         .pc(pc),
         .read_inst(read_inst),

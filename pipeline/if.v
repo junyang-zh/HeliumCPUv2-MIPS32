@@ -1,4 +1,4 @@
-// branch_predict.v: perform branch predict pc
+// if.v: pc implementation for pipeline
 
 `include "defines.v"
 
