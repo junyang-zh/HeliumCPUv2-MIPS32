@@ -151,7 +151,7 @@ module cpu #(
             can_branch, targ_else_offset, pc_addr_src_reg,
             mem_read_en, mem_write_en, l_s_mode,
             reg_write, reg_write_src, reg_write_addr,
-            ex_pc, imm, rs_val, rt_val
+            ex_pc, imm, rs_val, rt_forward_val // Use forward val here
         }),
         .ctrl_out({
             mem_can_branch, mem_targ_else_offset, mem_pc_addr_src_reg,
