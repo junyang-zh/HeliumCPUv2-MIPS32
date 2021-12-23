@@ -31,25 +31,25 @@ module regfile #(
     // Read rs
     always @(*) begin
         if (rst || rs_addr == `REG_ZERO) begin
-            rs_data = `ZERO_WORD;
+            rs_data <= `ZERO_WORD;
         end
         else if (rs_en) begin
-            rs_data = regs[rs_addr];
+            rs_data <= regs[rs_addr];
         end
         else begin
-            rs_data = `ZERO_WORD;
+            rs_data <= `ZERO_WORD;
         end
     end
     // Read rt
     always @(*) begin
         if (rst || rt_addr == `REG_ZERO) begin
-            rt_data = `ZERO_WORD;
+            rt_data <= `ZERO_WORD;
         end
         else if (rt_en) begin
-            rt_data = regs[rt_addr];
+            rt_data <= regs[rt_addr];
         end
         else begin
-            rt_data = `ZERO_WORD;
+            rt_data <= `ZERO_WORD;
         end
     end
 endmodule
