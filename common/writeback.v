@@ -23,21 +23,21 @@ module writeback #(
         if (reg_write) begin
             case (reg_write_src)
                 `REG_W_SRC_ALU:
-                    reg_write_data = alu_result;
+                    reg_write_data <= alu_result;
                 `REG_W_SRC_MEM:
-                    reg_write_data = mem_data;
+                    reg_write_data <= mem_data;
                 `REG_W_SRC_PCA4:
-                    reg_write_data = pc + 4;
-                default: reg_write_data = `ZERO_WORD;
+                    reg_write_data <= pc + 4;
+                default: reg_write_data <= `ZERO_WORD;
             endcase
             case (reg_write_dst)
                 `REG_W_DST_RD:
-                    reg_write_addr = rd;
+                    reg_write_addr <= rd;
                 `REG_W_DST_RT:
-                    reg_write_addr = rt;
+                    reg_write_addr <= rt;
                 `REG_W_DST_R31:
-                    reg_write_addr = `REG_ADDR_W'd31;
-                default: reg_write_addr = `REG_ADDR_W'b0;
+                    reg_write_addr <= `REG_ADDR_W'd31;
+                default: reg_write_addr <= `REG_ADDR_W'b0;
             endcase
         end
     end

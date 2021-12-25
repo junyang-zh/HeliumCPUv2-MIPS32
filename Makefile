@@ -6,14 +6,14 @@ PIPELINE = pipeline
 SIM = sim
 TARGET = target
 
-single_cycle: $(SIM)/testbench.v $(wildcard $(COMMON)/*.v $(SINGLE_CYCLE)/*.v)
+FILES = $(wildcard $(COMMON)/*.v $(SINGLE_CYCLE)/*.v)
+
+.PHONY: $(FILES)
+
+single_cycle: $(SIM)/testbench.v $(FILES)
 	mkdir -p $(TARGET)/$(SINGLE_CYCLE)
 	iverilog -o $(TARGET)/$(SINGLE_CYCLE)/sim.vvp -I $(COMMON) $^
 	cd $(TARGET)/$(SINGLE_CYCLE) && vvp sim.vvp
-
-multicycle:
-
-pipeline:
 
 clean:
 	rm -rf $(TARGET)

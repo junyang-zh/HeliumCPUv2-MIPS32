@@ -26,7 +26,7 @@ module pc_with_addr_mux #(
             pc <= `ZERO_WORD;
         end
         else begin
-            pc <= (can_branch && branch_take) ? (targ_else_offset ? pc_targ_addr : pc + pc_targ_addr) : pc + 4;
+            pc <= (can_branch && branch_take) ? (targ_else_offset ? pc_targ_addr : pc + pc_targ_addr + 4) : pc + 4;
         end
     end
 endmodule

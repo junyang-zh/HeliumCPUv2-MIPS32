@@ -27,7 +27,7 @@ module tb_top;
    initial begin
       rst = 1;
       #25 rst = 0;
-      #1000;
+      #5000;
       $finish;
    end
 

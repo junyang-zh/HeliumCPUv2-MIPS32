@@ -231,17 +231,15 @@ module control (
                 case (op_code)
                     `LB, `LBU, `LH, `LHU, `LW: begin // [rt] <- M[[rs]+imm]
                         rs_read_en = `TRUE;
-                        rt_read_en = `FALSE;
+                        rt_read_en = `TRUE;
                         reg_write = `TRUE;
                         reg_write_src = `REG_W_SRC_MEM;
                         reg_write_dst = `REG_W_DST_RT;
                     end
-                    `SB, `SH, `SW: begin // [rt] <- M[[rs]+imm]
+                    `SB, `SH, `SW: begin // M[[rs]+imm] <- [rt]
                         rs_read_en = `TRUE;
-                        rt_read_en = `FALSE;
-                        reg_write = `TRUE;
-                        reg_write_src = `REG_W_SRC_MEM;
-                        reg_write_dst = `REG_W_DST_RT;
+                        rt_read_en = `TRUE;
+                        reg_write = `FALSE;
                     end
                     `ADDI, `ADDIU, `ANDI, `ORI,
                     `SLTI, `SLTIU, `XORI: begin // [rt] < func([rs], imm)

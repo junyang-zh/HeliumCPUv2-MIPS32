@@ -25,7 +25,7 @@ module regfile #(
     wire[W-1:0] dbg21 = regs[`REG_ADDR_W'd21];
 
     // Write rd
-    always @(posedge clk) begin
+    always @(negedge clk) begin
         if (!rst && write_en && rd_addr != `REG_ZERO) begin
             regs[rd_addr] <= rd_data;
         end
@@ -36,7 +36,7 @@ module regfile #(
             rs_data = `ZERO_WORD;
         end
         else if (rs_en) begin
-            rs_data = regs[rs_addr];
+            rs_data <= regs[rs_addr];
         end
         else begin
             rs_data = `ZERO_WORD;
@@ -48,7 +48,7 @@ module regfile #(
             rt_data = `ZERO_WORD;
         end
         else if (rt_en) begin
-            rt_data = regs[rt_addr];
+            rt_data <= regs[rt_addr];
         end
         else begin
             rt_data = `ZERO_WORD;
