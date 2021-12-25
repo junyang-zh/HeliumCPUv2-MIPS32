@@ -63,6 +63,8 @@ As you can see, the diagram is splitted into 5 stages, which will run in turns b
 
 ![SingleCycleCounter.png](assets/SingleCycleCounter.png)
 
+Also, to fit in a narrower sense, I implemented a *pure* single cycle version, in which each instruction only takes a cycle. For more information, checkout the branch `PureSingleCycle`.
+
 ### Multicycle Version
 
 The multicycle version is just a small improvement of the single cycle version, which instead of asking every stage to run sequentially, skips some or all stages after decoding. This method requires to tailor the stage footprint for every instructions. Fortunately, the types are not too much, since all instructions need "IF" and "ID" stages.
